@@ -4,10 +4,11 @@ import { TikTok } from './Tiktok'
 const measurementId = 'TT-TEST'
 
 const mockTtq = () => {
-  const pixel = { track: vi.fn() }
+  const pixel = { track: vi.fn(), page: vi.fn() }
   const instance = vi.fn(() => pixel)
-  window.ttq = { instance }
-  return { instance, pixel }
+  const load = vi.fn()
+  window.ttq = { load, instance }
+  return { load, instance, pixel }
 }
 
 describe('TikTok', () => {
@@ -55,5 +56,18 @@ describe('TikTok', () => {
     tiktok.processAnalyticsEvent({ eventName: 'CompletePayment', eventParams: {} })
 
     expect(errorSpy).toHaveBeenCalledWith('[TIKTOK] ttq is not defined')
+  })
+
+  it('loads its pixel into a ttq the page already has, without re-running the snippet', () => {
+    const { load, instance, pixel } = mockTtq()
+    const pageTtq = window.ttq
+
+    new TikTok({ measurementId })
+
+    expect(document.querySelector(`script[data-id="tiktok-pixel-${measurementId}"]`)).toBeNull()
+    expect(window.ttq).toBe(pageTtq)
+    expect(load).toHaveBeenCalledWith(measurementId)
+    expect(instance).toHaveBeenCalledWith(measurementId)
+    expect(pixel.page).toHaveBeenCalled()
   })
 })
