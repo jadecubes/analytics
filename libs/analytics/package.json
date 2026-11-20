@@ -1,7 +1,7 @@
 {
   "name": "@jadecubes/analytics",
   "version": "0.0.1",
-  "description": "A unified TypeScript library for tracking analytics across Google Analytics 4, Meta (Facebook) Pixel, and TikTok Pixel",
+  "description": "One TypeScript API for loading GA4, Meta Pixel and TikTok Pixel and sending events to each",
   "main": "./index.js",
   "module": "./index.mjs",
   "types": "./index.d.ts",

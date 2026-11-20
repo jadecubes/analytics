@@ -1,44 +1,23 @@
 <p align="center">
-  <img src=".github/assets/logo.svg" alt="Analytics Logo" />
+  <img src="https://raw.githubusercontent.com/jadecubes/analytics/main/.github/assets/logo.svg" alt="Analytics Logo" />
 </p>
 
 <p align="center">
 
 [![npm version](https://img.shields.io/npm/v/@jadecubes/analytics.svg)](https://www.npmjs.com/package/@jadecubes/analytics)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@jadecubes/analytics)](https://bundlephobia.com/package/@jadecubes/analytics)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/jadecubes/Analytics/ci.yml?branch=main)](https://github.com/jadecubes/Analytics/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue)](https://www.typescriptlang.org/)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/jadecubes/analytics/ci.yml?branch=main)](https://github.com/jadecubes/analytics/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/jadecubes/analytics/blob/main/LICENSE)
 
 </p>
 
 <p align="center">
-  <b>A unified TypeScript library for tracking analytics across Google Analytics 4, Meta (Facebook) Pixel, and TikTok Pixel</b>
-</p>
-
-<p align="center">
-  Works in React apps or any other front-end
+  <b>One TypeScript API for loading GA4, Meta Pixel and TikTok Pixel and sending events to each</b>
 </p>
 
 ---
 
-## 🎯 Why Analytics?
-
-Modern front-ends often require multiple analytics platforms. Analytics offers:
-- The **same API** for GA4, Meta Pixel, and TikTok Pixel.
-- Loads each platform's script **once**; events sent before it finishes loading wait in the platform's own queue.
-- Built with **TypeScript**: exports `BaseAnalyticsEvent`, `AnalyticsConfig` and each platform's config type.
-- **Framework-agnostic**: plain functions you can call from React or any other code.
-
----
-
-## 🧑‍💻 Who Should Use It?
-
-- Front-end engineers who want to track events across multiple analytics platforms.
-- Teams looking for a shared analytics library with a consistent API.
-- Developers who want one small API over the three platforms' scripts.
-
----
+`@jadecubes/analytics` loads each platform's script once, sends each event only to the property or pixel you configured, and can hold an event fired right before a page navigation until the next page. It works in React or any other front-end. You still send each platform its own event name: GA4's `add_to_cart` is Meta's and TikTok's `AddToCart`. See the limitations below.
 
 ## 🚀 Getting Started
 
@@ -48,94 +27,55 @@ Modern front-ends often require multiple analytics platforms. Analytics offers:
 npm install @jadecubes/analytics
 # or
 pnpm add @jadecubes/analytics
-# or
-yarn add @jadecubes/analytics
 ```
 
-### Basic Usage
+### Set up
+
+Call this once, on the client, before you send anything:
 
 ```typescript
 import { createAnalyticsProviders, AnalyticsPlatforms } from '@jadecubes/analytics'
 
-// Initialize analytics providers at app startup
 createAnalyticsProviders({
-  [AnalyticsPlatforms.GA]: {
-    measurementId: 'G-XXXXXXXXXX'
-  },
-  [AnalyticsPlatforms.META]: {
-    measurementId: 'YOUR_META_PIXEL_ID'
-  },
-  [AnalyticsPlatforms.TIKTOK]: {
-    measurementId: 'YOUR_TIKTOK_PIXEL_ID'
-  }
+  [AnalyticsPlatforms.GA]: { measurementId: 'G-XXXXXXXXXX' },
+  [AnalyticsPlatforms.META]: { measurementId: 'YOUR_META_PIXEL_ID' },
+  [AnalyticsPlatforms.TIKTOK]: { measurementId: 'YOUR_TIKTOK_PIXEL_ID' },
 })
 ```
 
-### Track Events
+### Send events
 
 ```typescript
 import { getAnalyticsInstance, AnalyticsPlatforms } from '@jadecubes/analytics'
 
-// Get analytics instance for a specific platform
-const ga = getAnalyticsInstance(AnalyticsPlatforms.GA)
-const meta = getAnalyticsInstance(AnalyticsPlatforms.META)
-const tiktok = getAnalyticsInstance(AnalyticsPlatforms.TIKTOK)
-
-// Track events for Google Analytics 4
-ga?.processAnalyticsEvent({
+getAnalyticsInstance(AnalyticsPlatforms.GA)?.processAnalyticsEvent({
   eventName: 'add_to_cart',
-  eventParams: {
-    currency: 'USD',
-    value: 99.99,
-    items: [
-      {
-        item_id: 'SKU_12345',
-        item_name: 'Product Name',
-        price: 99.99
-      }
-    ]
-  }
+  eventParams: { currency: 'USD', value: 99.99, items: [{ item_id: 'SKU_12345', price: 99.99 }] },
 })
 
-// Track events for Meta (Facebook) Pixel
-meta?.processAnalyticsEvent({
+getAnalyticsInstance(AnalyticsPlatforms.META)?.processAnalyticsEvent({
   eventName: 'AddToCart',
-  eventParams: {
-    content_name: 'Product Name',
-    content_ids: ['SKU_12345'],
-    content_type: 'product',
-    value: 99.99,
-    currency: 'USD'
-  }
+  eventParams: { content_ids: ['SKU_12345'], content_type: 'product', value: 99.99, currency: 'USD' },
+  eventId: 'cart-12345',
 })
 
-// Track events for TikTok Pixel
-tiktok?.processAnalyticsEvent({
+getAnalyticsInstance(AnalyticsPlatforms.TIKTOK)?.processAnalyticsEvent({
   eventName: 'AddToCart',
-  eventParams: {
-    content_id: 'SKU_12345',
-    content_name: 'Product Name',
-    value: 99.99,
-    currency: 'USD'
-  }
+  eventParams: { content_id: 'SKU_12345', value: 99.99, currency: 'USD' },
+  eventId: 'cart-12345',
 })
 ```
 
-### Understanding Event Processing
+- The event goes to the platform straight away. Until the platform's script loads, its own stub (`gtag`, `fbq`, `ttq`) holds it, so you can send right after setup.
+- It reaches only the configured id, not other properties or pixels the page runs: GA4 with `send_to`, Meta with `fbq('trackSingle')` (`trackSingleCustom` for names outside Meta's [standard events](https://developers.facebook.com/docs/meta-pixel/reference#standard-events)), TikTok with `ttq.instance(id)`. Untargeted calls the page makes itself, such as a global `ttq.track(...)`, still reach every pixel, including ours.
+- `eventId`, if set, goes to Meta as `eventID` and to TikTok as `event_id`, so they can deduplicate it against the same event sent from your server. GA4 has no equivalent.
 
-The `processAnalyticsEvent` method:
-- Hands the event to the platform straight away. Until the platform's script loads, its own stub (`gtag`, `fbq`, `ttq`) holds the event, so you can call it right after initialization
-- Sends each event only to the configured property or pixel, not to others the page may also run: GA4 with `send_to`, Meta with `fbq('trackSingle')` (or `trackSingleCustom` for names outside Meta's [standard events](https://developers.facebook.com/docs/meta-pixel/reference#standard-events)), TikTok with `ttq.instance(id)`. Untargeted calls the page makes itself, such as a global `ttq.track(...)`, still reach every pixel, including ours
-- Passes `eventId`, if you set one, to Meta (`eventID`) and TikTok (`event_id`) so they can deduplicate it against server-side events
+### Events right before a page navigation
 
-### Events Right Before a Page Navigation
-
-An event sent just before a full-page navigation (a link, a form submit, `window.location = …`) can be lost when the page unloads. `sendAnalyticsPendingEvent` saves the event in `sessionStorage` instead, and the platform sends it the next time it is initialized, on the next page:
+An event sent just before a full-page navigation (a link, a form submit, `window.location = …`) can be lost when the page unloads. `sendAnalyticsPendingEvent` saves it in `sessionStorage` instead, and the platform sends it the next time it is set up, on the next page:
 
 ```typescript
-const meta = getAnalyticsInstance(AnalyticsPlatforms.META)
-
-meta?.sendAnalyticsPendingEvent({
+getAnalyticsInstance(AnalyticsPlatforms.META)?.sendAnalyticsPendingEvent({
   eventName: 'InitiateCheckout',
   eventParams: { value: 99.99, currency: 'USD' },
   eventId: 'checkout-12345',
@@ -148,7 +88,7 @@ window.location.href = '/checkout'
 - `sessionStorage` is per tab and per origin (scheme, host and port). If the navigation doesn't happen or leaves the origin, the event is sent the next time this tab sets the platform up on this origin, late and attributed to that page.
 - If `sessionStorage` is unavailable, the event is sent immediately instead.
 
-### Using It in React
+### Using it in React
 
 Call `createAnalyticsProviders` in your client entry file, before the first render. `getAnalyticsInstance` returns `undefined` until it has run, and React runs child effects before a parent's `useEffect`, so setting it up inside `App` would drop events that children send on mount. On the server it does nothing.
 
@@ -158,10 +98,7 @@ import { createRoot } from 'react-dom/client'
 import { createAnalyticsProviders, AnalyticsPlatforms } from '@jadecubes/analytics'
 import { App } from './App'
 
-createAnalyticsProviders({
-  [AnalyticsPlatforms.GA]: { measurementId: 'G-XXXXXXXXXX' },
-  [AnalyticsPlatforms.META]: { measurementId: 'YOUR_PIXEL_ID' },
-})
+createAnalyticsProviders({ [AnalyticsPlatforms.GA]: { measurementId: 'G-XXXXXXXXXX' } })
 
 createRoot(document.getElementById('root')!).render(<App />)
 ```
@@ -176,15 +113,34 @@ export function PurchaseButton() {
       eventName: 'purchase',
       eventParams: { transaction_id: 'T_12345', value: 299.99, currency: 'USD' },
     })
-    getAnalyticsInstance(AnalyticsPlatforms.META)?.processAnalyticsEvent({
-      eventName: 'Purchase',
-      eventParams: { value: 299.99, currency: 'USD' },
-    })
   }
 
   return <button onClick={handlePurchase}>Buy</button>
 }
 ```
+
+---
+
+## 📖 API
+
+| Export | What it does |
+|---|---|
+| `createAnalyticsProviders(config: AnalyticsConfig): void` | Sets up each platform in `config` once. Skips platforms with an empty id, keeps the first instance and warns if a platform is set up again with another id, and does nothing without `window`. |
+| `getAnalyticsInstance(platform: AnalyticsPlatforms): Analytics \| undefined` | Returns the platform set up by `createAnalyticsProviders`, or `undefined` if it wasn't. |
+| `instance.processAnalyticsEvent(event: BaseAnalyticsEvent): void` | Sends the event to this platform now. Errors are logged, never thrown. |
+| `instance.sendAnalyticsPendingEvent(event: BaseAnalyticsEvent): void` | Saves the event and sends it when this platform and id are next set up. Sends it now if `sessionStorage` is unavailable. |
+| `instance.measurementId` | The id this platform was set up with. |
+| `AnalyticsPlatforms` | `GA`, `META`, `TIKTOK`. |
+| Types | `AnalyticsConfig`, `BaseAnalyticsEvent` (`eventName`, `eventParams`, optional `eventId`), `Analytics`, `GA4Config`, `MetaPixelConfig`, `TikTokPixelConfig`. |
+
+---
+
+## ⚠️ Limitations
+
+- **One call per platform.** There is no single event that is translated into each platform's event name and parameters.
+- **No consent handling.** Scripts load as soon as you call `createAnalyticsProviders`; with a consent banner, call it only once the user agrees. Events sent before then are dropped, because `getAnalyticsInstance` returns `undefined`.
+- **Page views only at setup.** The library sends one page view per platform when it is set up and none on route changes in a single-page app. GA4's enhanced measurement and the Meta Pixel may record history changes on their own, so check before sending your own route-change page views.
+- **No user identity.** There is no `identify` call.
 
 ---
 
@@ -199,7 +155,7 @@ export function PurchaseButton() {
 | Adding a platform | Change the library | Write or install a plugin |
 | Translating one event into each platform's event and parameters | No | No: each plugin receives the same name |
 | Changing or blocking events before they're sent (consent, personal data) | No | Lifecycle hooks, and plugins can be turned off* |
-| User identity and page views | No `identify`; one page view per platform at setup, none on route changes | `identify`, `page`, `reset`* |
+| User identity and page views | No `identify`; the library sends one page view per platform at setup, none on route changes | `identify`, `page`, `reset`* |
 | Events fired right before a page navigation | `sendAnalyticsPendingEvent` saves them and sends them on the next page | Not built in* |
 | Deduplicating with server-side events | `eventId` sent to Meta (`eventID`) and TikTok (`event_id`) | Up to each plugin* |
 | Pages that already run other properties or pixels | Sends only to the configured id (`send_to`, `trackSingle`, `ttq.instance`) | Up to each plugin* |
@@ -210,102 +166,10 @@ export function PurchaseButton() {
 
 ---
 
-## 📦 Publishing to npm
+## 🤝 Contributing
 
-This library is published as `@jadecubes/analytics` on npm. If you're a maintainer, follow these steps to publish a new version:
+Development setup, scripts and publishing steps are in [CONTRIBUTING.md](https://github.com/jadecubes/analytics/blob/main/CONTRIBUTING.md).
 
-### Prerequisites
+## 📄 License
 
-1. **npm Account**: Ensure you have an npm account and are logged in
-   ```bash
-   npm login
-   ```
-
-2. **Organization Access**: You need publish access to the `@jadecubes` organization on npm
-
-### Publishing Steps
-
-1. **Update Version**: Update the version in `libs/analytics/package.json` following [semantic versioning](https://semver.org/):
-   - **Patch** (0.0.x): Bug fixes
-   - **Minor** (0.x.0): New features, backward compatible
-   - **Major** (x.0.0): Breaking changes
-
-   ```bash
-   # Edit libs/analytics/package.json and update the version field
-   # For example: "version": "0.0.2"
-   ```
-
-2. **Build the Library**:
-   ```bash
-   pnpm build
-   ```
-
-3. **Test the Build**: Verify the build output in `dist/libs/analytics/`
-   ```bash
-   ls -la dist/libs/analytics/
-   ```
-
-4. **Copy package.json, README.md and LICENSE to dist**: all three need to be in the published directory
-   ```bash
-   cp libs/analytics/package.json README.md LICENSE dist/libs/analytics/
-   ```
-
-5. **Publish to npm**:
-   ```bash
-   cd dist/libs/analytics
-   npm publish --access public
-   ```
-
-### Automated Publishing (Recommended)
-
-Run the root `package.json`'s publish script, which does steps 2, 4 and 5 for you:
-
-```bash
-pnpm publish:analytics
-```
-
-### Publishing Beta/Alpha Versions
-
-For pre-release versions, set a pre-release version such as `0.1.0-beta.1` (step 1), build and copy (steps 2 and 4), then publish with a tag:
-
-```bash
-cd dist/libs/analytics
-npm publish --access public --tag beta
-```
-
----
-
-## 🛠️ Development
-
-### Project Structure
-
-```
-Analytics/
-├── libs/
-│   └── analytics/          # Main analytics library
-│       ├── src/
-│       │   ├── core/       # Core analytics implementations
-│       │   ├── createAnalyticsProviders.ts  # Set up platforms, get instances
-│       │   └── types/      # TypeScript types
-│       └── vite.config.ts  # Vite build configuration
-└── tools/                  # Build and development tools
-```
-
-### Available Scripts
-
-```bash
-# Build the library
-pnpm build
-
-# Run tests
-pnpm test
-
-# Run tests in watch mode
-pnpm test:watch
-
-# Run tests with coverage
-pnpm test:coverage
-
-# Lint code
-pnpm lint
-```
+[MIT](https://github.com/jadecubes/analytics/blob/main/LICENSE)
