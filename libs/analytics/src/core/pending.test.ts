@@ -5,7 +5,7 @@ import { Meta } from './Meta'
 
 const metaId = 'META-TEST'
 const gaId = 'G-TEST'
-const metaKey = `${PENDING_EVENTS_KEY_PREFIX}META`
+const metaKey = `${PENDING_EVENTS_KEY_PREFIX}META:${metaId}`
 
 const simulateNextPageLoad = () => {
   document.head.innerHTML = ''
@@ -120,5 +120,17 @@ describe('sendAnalyticsPendingEvent', () => {
 
     expect(() => new Meta({ measurementId: metaId })).not.toThrow()
     expect(mockFbq).toHaveBeenCalledWith('init', metaId)
+  })
+
+  it('replays an event only for the pixel id it was saved for', () => {
+    new Meta({ measurementId: metaId }).sendAnalyticsPendingEvent({ eventName: 'Purchase', eventParams: {} })
+
+    simulateNextPageLoad()
+    const mockFbq = vi.fn()
+    window.fbq = mockFbq
+    new Meta({ measurementId: 'OTHER-PIXEL' })
+
+    expect(mockFbq).not.toHaveBeenCalledWith('trackSingle', 'OTHER-PIXEL', 'Purchase', {})
+    expect(window.sessionStorage.getItem(metaKey)).not.toBeNull()
   })
 })

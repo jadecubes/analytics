@@ -55,7 +55,7 @@ export abstract class Analytics {
   }
 
   private get pendingStorageKey(): string {
-    return `${PENDING_EVENTS_KEY_PREFIX}${this.platform}`
+    return `${PENDING_EVENTS_KEY_PREFIX}${this.platform}:${this.measurementId}`
   }
 
   private readPendingEvents(): BaseAnalyticsEvent[] {

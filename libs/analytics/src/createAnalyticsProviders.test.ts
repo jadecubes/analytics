@@ -43,4 +43,13 @@ describe('createAnalyticsProviders', () => {
     expect(getAnalyticsInstance(AnalyticsPlatforms.META)).toBe(first)
     expect(warnSpy).toHaveBeenCalledOnce()
   })
+
+  it('skips a platform whose id is empty', async () => {
+    const { createAnalyticsProviders, getAnalyticsInstance } = await loadModule()
+
+    createAnalyticsProviders({ [AnalyticsPlatforms.GA]: { measurementId: '' } })
+
+    expect(getAnalyticsInstance(AnalyticsPlatforms.GA)).toBeUndefined()
+    expect(document.querySelector('script[src*="googletagmanager"]')).toBeNull()
+  })
 })

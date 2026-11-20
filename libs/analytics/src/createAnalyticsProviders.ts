@@ -22,7 +22,7 @@ export const createAnalyticsProviders = (config: AnalyticsConfig) => {
 
   for (const platform of Object.values(AnalyticsPlatforms)) {
     const platformConfig = config[platform]
-    if (!platformConfig) continue
+    if (!platformConfig?.measurementId) continue
     const existing = analyticsInstances[platform]
     if (existing && existing.measurementId !== platformConfig.measurementId) {
       console.warn(`[${platform}] already initialized with ${existing.measurementId}; ignoring ${platformConfig.measurementId}`)

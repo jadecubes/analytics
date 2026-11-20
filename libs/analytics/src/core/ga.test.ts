@@ -64,7 +64,7 @@ describe('Ga', () => {
     const mockGtag = vi.fn()
     window.gtag = mockGtag
 
-    ga.processAnalyticsEvent({ eventName: 'purchase', eventParams: { value: 10, items: [{ item_id: 'A' }] } })
+    ga.processAnalyticsEvent({ eventName: 'purchase', eventParams: { value: 10, items: [{ item_id: 'A' }], send_to: 'G-OTHER' } })
 
     expect(mockGtag).toHaveBeenCalledWith('event', 'purchase', { value: 10, items: [{ item_id: 'A' }], send_to: measurementId })
   })

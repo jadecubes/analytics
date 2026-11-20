@@ -27,7 +27,7 @@
 Modern front-ends often require multiple analytics platforms. Analytics offers:
 - The **same API** for GA4, Meta Pixel, and TikTok Pixel.
 - Loads each platform's script **once**; events sent before it finishes loading wait in the platform's own queue.
-- Built with **TypeScript**: exports `BaseAnalyticsEvent` and each platform's config type.
+- Built with **TypeScript**: exports `BaseAnalyticsEvent`, `AnalyticsConfig` and each platform's config type.
 - **Framework-agnostic**: plain functions you can call from React or any other code.
 - Built with **Vite** for optimal bundle size and performance.
 
@@ -125,7 +125,7 @@ tiktok?.processAnalyticsEvent({
 ### Understanding Event Processing
 
 The `processAnalyticsEvent` method:
-- Hands the event to the platform straight away. Until the platform's script loads, its own stub (`gtag`, `fbq`, `ttq`) holds the event, so you can call it right after initialization.
+- Hands the event to the platform straight away. Until the platform's script loads, its own stub (`gtag`, `fbq`, `ttq`) holds the event, so you can call it right after initialization
 - Sends each event only to the configured property or pixel, not to others the page may also run: GA4 with `send_to`, Meta with `fbq('trackSingle')` (or `trackSingleCustom` for names outside Meta's [standard events](https://developers.facebook.com/docs/meta-pixel/reference#standard-events)), TikTok with `ttq.instance(id)`
 - Passes `eventId`, if you set one, to Meta (`eventID`) and TikTok (`event_id`) so they can deduplicate it against server-side events
 
@@ -144,7 +144,7 @@ meta?.sendAnalyticsPendingEvent({
 window.location.href = '/checkout'
 ```
 
-- Each platform keeps its own pending events, so call it on every platform that should receive the event.
+- Pending events are kept per platform and id, so call it on every platform that should receive the event.
 - The event is sent from the next page, so the platform records that page and time. Put anything you need from the current page in `eventParams`.
 - `sessionStorage` is per tab and per origin (scheme, host and port). If the navigation doesn't happen or leaves the origin, the event is sent the next time this tab sets the platform up on this origin, late and attributed to that page.
 - If `sessionStorage` is unavailable, the event is sent immediately instead.
@@ -224,7 +224,7 @@ This library is published as `@jadecubes/analytics` on npm. If you're a maintain
    ls -la dist/libs/analytics/
    ```
 
-4. **Copy package.json to dist**: The package.json needs to be in the dist directory
+4. **Copy package.json and README.md to dist**: both need to be in the published directory
    ```bash
    cp libs/analytics/package.json README.md dist/libs/analytics/
    ```
