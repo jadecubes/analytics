@@ -10,6 +10,9 @@ export enum AnalyticsPlatforms {
  * Each platform's snippet defines a stub (`gtag`, `fbq`, `ttq`) that queues calls until the
  * real script loads, so events can be handed over as soon as the snippet has run.
  */
+const isStoredEvent = (item: unknown): boolean =>
+  typeof item === 'object' && item !== null && typeof (item as { eventName?: unknown }).eventName === 'string'
+
 export abstract class Analytics<T extends BaseAnalyticsEvent> {
   protected abstract readonly platform: AnalyticsPlatforms
   protected abstract initialize(): void
@@ -55,7 +58,7 @@ export abstract class Analytics<T extends BaseAnalyticsEvent> {
     const saved = window.sessionStorage.getItem(this.pendingStorageKey)
     try {
       const parsed: unknown = JSON.parse(saved ?? '[]')
-      return Array.isArray(parsed) ? (parsed as T[]) : []
+      return Array.isArray(parsed) ? parsed.filter(isStoredEvent) as T[] : []
     }
     catch {
       return []

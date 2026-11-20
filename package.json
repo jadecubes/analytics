@@ -1,16 +1,16 @@
 {
-  "name": "react-analytics",
+  "name": "analytics-workspace",
   "private": true,
   "version": "0.0.0",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "prepare": "husky",
-    "build": "cd libs/analytics && tsc --noEmit && vite build",
+    "build": "cd libs/analytics && tsc -p tsconfig.lib.json --noEmit && tsc -p tsconfig.spec.json --noEmit && vite build",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0 --ignore-pattern 'eslint.config.mjs'",
-    "publish:analytics": "pnpm build && cp libs/analytics/package.json dist/libs/analytics/ && cd dist/libs/analytics && npm publish --access public"
+    "publish:analytics": "pnpm build && cp libs/analytics/package.json README.md dist/libs/analytics/ && cd dist/libs/analytics && npm publish --access public"
   },
   "dependencies": {
     "tslib": "^2.7.0"
@@ -18,25 +18,17 @@
   "devDependencies": {
     "@stylistic/eslint-plugin": "^2.9.0",
     "@types/node": "22.16.3",
-    "@types/react": "18.3.1",
-    "@types/react-dom": "18.3.0",
     "@typescript-eslint/eslint-plugin": "^8.36.0",
     "@typescript-eslint/parser": "^8.36.0",
     "@vitest/coverage-v8": "^2.1.9",
-    "@vitest/ui": "^2.1.9",
     "eslint": "~9.31.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-define-config": "^2.1.0",
     "eslint-plugin-import": "2.31.0",
-    "eslint-plugin-jsx-a11y": "6.10.0",
-    "eslint-plugin-react": "7.37.1",
-    "eslint-plugin-react-hooks": "4.6.2",
     "globals": "^15.11.0",
     "husky": "^9.1.6",
     "jsdom": "~22.1.0",
     "prettier": "^3.6.2",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
     "typescript": "^5.6.2",
     "vite": "^5.2.0",
     "vite-plugin-dts": "~4.5.4",

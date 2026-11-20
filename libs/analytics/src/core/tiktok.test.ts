@@ -1,4 +1,4 @@
-import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { type BaseAnalyticsEvent } from '../types/events'
 import { TikTok } from './Tiktok'
 
@@ -7,16 +7,11 @@ describe('TikTok Analytics', () => {
   const config = { measurementId }
 
   beforeEach(() => {
-    // Arrange: Setup fake timers and clean state
-    vi.useFakeTimers()
+    // Arrange: clean state
     window.ttq = undefined
     document.head.innerHTML = ''
     // @ts-expect-error: override singleton for test
     TikTok.instance = null
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   describe('test_getInstance_multipleCallsSameConfig_returnsSameSingletonInstance', () => {
@@ -101,12 +96,10 @@ describe('TikTok Analytics', () => {
         eventParams: { value: 150 },
       }
 
-      // Act: Queue multiple events before ready
+      // Act: Send multiple events
       tiktok.processAnalyticsEvent(event1)
       tiktok.processAnalyticsEvent(event2)
       tiktok.processAnalyticsEvent(event3)
-
-      // Set ready and advance time
 
       // Assert: All events should be sent
       expect(mockTtq.track).toHaveBeenCalledTimes(3)

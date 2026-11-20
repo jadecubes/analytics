@@ -3,9 +3,6 @@ import pluginTypeScript from '@typescript-eslint/eslint-plugin'
 import parserTypeScript from '@typescript-eslint/parser'
 import { defineConfig } from 'eslint-define-config'
 import importPlugin from 'eslint-plugin-import'
-import jsxA11y from 'eslint-plugin-jsx-a11y'
-import pluginReact from 'eslint-plugin-react'
-import pluginReactHooks from 'eslint-plugin-react-hooks'
 import globals from 'globals'
 
 export default defineConfig([
@@ -26,16 +23,12 @@ export default defineConfig([
       '@stylistic': stylistic,
       '@typescript-eslint': pluginTypeScript,
       'import': importPlugin,
-      'jsx-a11y': jsxA11y,
-      'react': pluginReact,
-      'react-hooks': pluginReactHooks,
     },
     languageOptions: {
       parser: parserTypeScript,
       parserOptions: {
         ecmaVersion: 'latest',
         sourceType: 'module',
-        ecmaFeatures: { jsx: true },
         projectService: true,
         tsconfigRootDir: import.meta.dirname,
       },
@@ -45,15 +38,9 @@ export default defineConfig([
         ...globals.node,
       },
     },
-    settings: {
-      react: { version: 'detect' },
-    },
     rules: {
       ...pluginTypeScript.configs.recommended.rules,
       ...pluginTypeScript.configs['recommended-requiring-type-checking'].rules,
-      ...pluginReact.configs.recommended.rules,
-      ...pluginReact.configs['jsx-runtime'].rules,
-      ...pluginReactHooks.configs.recommended.rules,
       ...stylistic.configs['recommended-flat'].rules,
       '@stylistic/semi': ['error', 'never'],
       '@stylistic/quotes': ['error', 'single'],
@@ -92,20 +79,12 @@ export default defineConfig([
             'sibling',
             'index',
           ],
-          pathGroups: [
-            {
-              pattern: 'react**',
-              group: 'external',
-              position: 'before',
-            },
-          ],
           alphabetize: {
             order: 'asc',
             caseInsensitive: true,
           },
         },
       ],
-      'react/prop-types': 'off',
       'eqeqeq': ['error', 'smart'],
     },
   },

@@ -16,6 +16,8 @@ const analyticsInstances: Partial<{
 }> = {}
 
 export const createAnalyticsProviders = (config: AnalyticsConfig) => {
+  // Server-side rendering has no window; the call on the client sets everything up
+  if (typeof window === 'undefined') return
   if (config[AnalyticsPlatforms.GA]) {
     analyticsInstances[AnalyticsPlatforms.GA] = Ga.getInstance(config[AnalyticsPlatforms.GA])
   }

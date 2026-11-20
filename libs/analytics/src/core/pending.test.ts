@@ -90,4 +90,25 @@ describe('sendAnalyticsPendingEvent', () => {
     expect(mockFbq).not.toHaveBeenCalled()
     expect(window.sessionStorage.getItem(metaKey)).toBeNull()
   })
+
+  it('test_nextPageLoad_replaysGaPendingEventsThroughGtag', () => {
+    Ga.getInstance(gaConfig).sendAnalyticsPendingEvent({ eventName: 'purchase', eventParams: { value: 3 } })
+
+    simulateNextPageLoad()
+    const mockGtag = vi.fn()
+    window.gtag = mockGtag
+    Ga.getInstance(gaConfig)
+
+    expect(mockGtag).toHaveBeenCalledWith('event', 'purchase', { value: 3 })
+  })
+
+  it('test_storedQueueWithInvalidItem_replaysOnlyValidEvents', () => {
+    window.sessionStorage.setItem(metaKey, JSON.stringify([null, 'x', { eventName: 'Purchase', eventParams: {} }]))
+    const mockFbq = vi.fn()
+    window.fbq = mockFbq
+
+    expect(() => Meta.getInstance(metaConfig)).not.toThrow()
+    expect(mockFbq).toHaveBeenCalledTimes(1)
+    expect(mockFbq).toHaveBeenCalledWith('track', 'Purchase', {})
+  })
 })

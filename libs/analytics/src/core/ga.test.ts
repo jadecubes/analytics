@@ -1,4 +1,4 @@
-import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { type BaseAnalyticsEvent } from '../types/events'
 import { Ga } from './Ga'
 
@@ -7,17 +7,12 @@ describe('Google Analytics (GA4)', () => {
   const config = { measurementId }
 
   beforeEach(() => {
-    // Arrange: Setup fake timers and clean state
-    vi.useFakeTimers()
+    // Arrange: clean state
     window.gtag = undefined
     window.dataLayer = undefined
     document.head.innerHTML = ''
     // @ts-expect-error: override singleton
     Ga.instance = null
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   describe('test_getInstance_multipleCallsSameConfig_returnsSameSingletonInstance', () => {
@@ -126,12 +121,10 @@ describe('Google Analytics (GA4)', () => {
         eventParams: { value: 99.99 },
       }
 
-      // Act: Queue multiple events before ready
+      // Act: Send multiple events
       ga.processAnalyticsEvent(event1)
       ga.processAnalyticsEvent(event2)
       ga.processAnalyticsEvent(event3)
-
-      // Set ready and advance time
 
       // Assert: All events should be sent
       expect(mockGtag).toHaveBeenCalledTimes(3)
@@ -318,6 +311,39 @@ describe('Google Analytics (GA4)', () => {
         value: 999999.99,
         quantity: 1000000,
       })
+    })
+  })
+
+  describe('test_initialize_gtagStub_pushesArgumentsObject', () => {
+    it('should push the arguments object, which is the only form gtag.js reads', () => {
+      Ga.getInstance(config)
+
+      expect(Object.prototype.toString.call(window.dataLayer?.[0])).toBe('[object Arguments]')
+    })
+  })
+
+  describe('test_initialize_pageAlreadyRunsGtag_configuresOurId', () => {
+    it('should configure our id when the page already runs gtag for another property', () => {
+      const pageGtag = vi.fn()
+      window.gtag = pageGtag
+      window.dataLayer = []
+
+      Ga.getInstance(config)
+
+      expect(pageGtag).toHaveBeenCalledWith('config', measurementId)
+    })
+
+    it('should not configure our id again when its script is already on the page', () => {
+      const existingScript = document.createElement('script')
+      existingScript.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`
+      document.head.appendChild(existingScript)
+      const pageGtag = vi.fn()
+      window.gtag = pageGtag
+      window.dataLayer = []
+
+      Ga.getInstance(config)
+
+      expect(pageGtag).not.toHaveBeenCalledWith('config', measurementId)
     })
   })
 })

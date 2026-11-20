@@ -1,22 +1,17 @@
-import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { type BaseAnalyticsEvent } from '../types/events'
 import { Meta } from './Meta'
 
 describe('Meta Analytics', () => {
   const measurementId = 'META-TEST-ID'
-  const config = { measurementId, userId: null }
+  const config = { measurementId }
 
   beforeEach(() => {
-    // Arrange: Setup fake timers and clean DOM
-    vi.useFakeTimers()
+    // Arrange: clean DOM
     window.fbq = undefined
     document.head.innerHTML = ''
     // @ts-expect-error override singleton for testing
     Meta.instance = null
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   describe('test_getInstance_multipleCallsSameConfig_returnsSameSingletonInstance', () => {
@@ -93,12 +88,10 @@ describe('Meta Analytics', () => {
         eventParams: { value: 50 },
       }
 
-      // Act: Queue multiple events before ready
+      // Act: Send multiple events
       meta.processAnalyticsEvent(event1)
       meta.processAnalyticsEvent(event2)
       meta.processAnalyticsEvent(event3)
-
-      // Set ready and advance time
 
       // Assert: All events should be sent
       expect(mockFbq).toHaveBeenCalledTimes(3)

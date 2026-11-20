@@ -151,49 +151,39 @@ window.location.href = '/checkout'
 
 ### Using It in React
 
-```typescript
-import { useEffect } from 'react'
-import { createAnalyticsProviders, getAnalyticsInstance, AnalyticsPlatforms } from '@jadecubes/analytics'
+Call `createAnalyticsProviders` in your client entry file, before the first render. `getAnalyticsInstance` returns `undefined` until it has run, and React runs child effects before a parent's `useEffect`, so setting it up inside `App` would drop events that children send on mount. On the server it does nothing.
 
-function App() {
-  useEffect(() => {
-    // Initialize on app mount
-    createAnalyticsProviders({
-      [AnalyticsPlatforms.GA]: { measurementId: 'G-XXXXXXXXXX' },
-      [AnalyticsPlatforms.META]: { measurementId: 'YOUR_PIXEL_ID' },
-      [AnalyticsPlatforms.TIKTOK]: { measurementId: 'YOUR_TIKTOK_PIXEL_ID' }
-    })
-  }, [])
+```tsx
+// main.tsx
+import { createRoot } from 'react-dom/client'
+import { createAnalyticsProviders, AnalyticsPlatforms } from '@jadecubes/analytics'
+import { App } from './App'
 
+createAnalyticsProviders({
+  [AnalyticsPlatforms.GA]: { measurementId: 'G-XXXXXXXXXX' },
+  [AnalyticsPlatforms.META]: { measurementId: 'YOUR_PIXEL_ID' },
+})
+
+createRoot(document.getElementById('root')!).render(<App />)
+```
+
+```tsx
+// PurchaseButton.tsx
+import { getAnalyticsInstance, AnalyticsPlatforms } from '@jadecubes/analytics'
+
+export function PurchaseButton() {
   const handlePurchase = () => {
-    const ga = getAnalyticsInstance(AnalyticsPlatforms.GA)
-    const meta = getAnalyticsInstance(AnalyticsPlatforms.META)
-
-    // Track purchase event
-    ga?.processAnalyticsEvent({
+    getAnalyticsInstance(AnalyticsPlatforms.GA)?.processAnalyticsEvent({
       eventName: 'purchase',
-      eventParams: {
-        transaction_id: 'T_12345',
-        value: 299.99,
-        currency: 'USD',
-        items: [{
-          item_id: 'SKU_12345',
-          item_name: 'Product Name',
-          price: 299.99
-        }]
-      }
+      eventParams: { transaction_id: 'T_12345', value: 299.99, currency: 'USD' },
     })
-
-    meta?.processAnalyticsEvent({
+    getAnalyticsInstance(AnalyticsPlatforms.META)?.processAnalyticsEvent({
       eventName: 'Purchase',
-      eventParams: {
-        value: 299.99,
-        currency: 'USD'
-      }
+      eventParams: { value: 299.99, currency: 'USD' },
     })
   }
 
-  return <YourApp />
+  return <button onClick={handlePurchase}>Buy</button>
 }
 ```
 

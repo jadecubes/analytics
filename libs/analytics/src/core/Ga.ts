@@ -28,10 +28,11 @@ export class Ga extends Analytics<BaseAnalyticsEvent> {
 
   protected initialize() {
     const head = document.querySelector('head')
-    const existingScript = document.querySelector(`script[src="https://www.googletagmanager.com/gtag/js?id=${this.measurementId}"]`)
+    const scriptSrc = `https://www.googletagmanager.com/gtag/js?id=${this.measurementId}`
     // dataLayer needs to be initialized before GA script is loaded
     window.dataLayer = window.dataLayer || []
     // https://developers.google.com/tag-platform/devguides/datalayer
+    // gtag.js only reads the `arguments` object, not an array of the same values
     function gtag() {
       window.dataLayer?.push(arguments)
     }
@@ -39,13 +40,13 @@ export class Ga extends Analytics<BaseAnalyticsEvent> {
     if (!window.gtag) {
       window.gtag = gtag
       window.gtag('js', new Date())
-      window.gtag('config', this.measurementId)
     }
 
-    // Only init script once
-    if (!existingScript) {
+    // The page may already run gtag for another property, so configure ours unless its script is present
+    if (!document.querySelector(`script[src="${scriptSrc}"]`)) {
+      window.gtag('config', this.measurementId)
       const script = document.createElement('script')
-      script.setAttribute('src', `https://www.googletagmanager.com/gtag/js?id=${this.measurementId}`)
+      script.setAttribute('src', scriptSrc)
       script.async = true
       head?.appendChild(script)
     }

@@ -1,4 +1,3 @@
-type DataLayerEvent = string | Date | Record<string, unknown> | unknown[]
 interface Window {
   dataLayer: unknown[] | undefined
   gtag: ((...args: unknown[]) => void) | undefined
