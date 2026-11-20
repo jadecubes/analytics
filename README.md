@@ -266,10 +266,9 @@ pnpm publish:analytics
 
 ### Publishing Beta/Alpha Versions
 
-For pre-release versions:
+For pre-release versions, set a pre-release version such as `0.1.0-beta.1` (step 1), build and copy (steps 2 and 4), then publish with a tag:
 
 ```bash
-# Update version to include tag, e.g., "0.1.0-beta.1"
 cd dist/libs/analytics
 npm publish --access public --tag beta
 ```
