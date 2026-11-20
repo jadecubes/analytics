@@ -258,17 +258,8 @@ This library is published as `@jadecubes/analytics` on npm. If you're a maintain
 
 ### Automated Publishing (Recommended)
 
-The root `package.json` already has a publish script:
+Run the root `package.json`'s publish script, which does steps 2, 4 and 5 for you:
 
-```json
-{
-  "scripts": {
-    "publish:analytics": "pnpm build && cp libs/analytics/package.json README.md LICENSE dist/libs/analytics/ && cd dist/libs/analytics && npm publish --access public"
-  }
-}
-```
-
-Then simply run:
 ```bash
 pnpm publish:analytics
 ```
