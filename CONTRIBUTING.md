@@ -13,7 +13,7 @@ analytics/
 ├── libs/analytics/
 │   ├── src/
 │   │   ├── index.ts                     # Public exports
-│   │   ├── createAnalyticsProviders.ts  # Sets up platforms, returns instances
+│   │   ├── createAnalyticsProviders.ts  # Platform setup and instance lookup
 │   │   ├── core/                        # Base class and one class per platform, with tests
 │   │   └── types/                       # Event type and window globals
 │   ├── package.json                     # The published package
