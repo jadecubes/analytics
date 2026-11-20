@@ -15,17 +15,30 @@ const analyticsInstances: Partial<{
   [AnalyticsPlatforms.TIKTOK]: TikTok
 }> = {}
 
+const warnIfReconfigured = (platform: AnalyticsPlatforms, existing: { measurementId: string } | undefined, measurementId: string) => {
+  if (existing && existing.measurementId !== measurementId) {
+    console.warn(`[${platform}] already initialized with ${existing.measurementId}; ignoring ${measurementId}`)
+  }
+}
+
 export const createAnalyticsProviders = (config: AnalyticsConfig) => {
   // Server-side rendering has no window; the call on the client sets everything up
   if (typeof window === 'undefined') return
-  if (config[AnalyticsPlatforms.GA]) {
-    analyticsInstances[AnalyticsPlatforms.GA] = Ga.getInstance(config[AnalyticsPlatforms.GA])
+
+  const gaConfig = config[AnalyticsPlatforms.GA]
+  if (gaConfig) {
+    warnIfReconfigured(AnalyticsPlatforms.GA, analyticsInstances[AnalyticsPlatforms.GA], gaConfig.measurementId)
+    analyticsInstances[AnalyticsPlatforms.GA] ??= new Ga(gaConfig)
   }
-  if (config[AnalyticsPlatforms.META]) {
-    analyticsInstances[AnalyticsPlatforms.META] = Meta.getInstance(config[AnalyticsPlatforms.META])
+  const metaConfig = config[AnalyticsPlatforms.META]
+  if (metaConfig) {
+    warnIfReconfigured(AnalyticsPlatforms.META, analyticsInstances[AnalyticsPlatforms.META], metaConfig.measurementId)
+    analyticsInstances[AnalyticsPlatforms.META] ??= new Meta(metaConfig)
   }
-  if (config[AnalyticsPlatforms.TIKTOK]) {
-    analyticsInstances[AnalyticsPlatforms.TIKTOK] = TikTok.getInstance(config[AnalyticsPlatforms.TIKTOK])
+  const tiktokConfig = config[AnalyticsPlatforms.TIKTOK]
+  if (tiktokConfig) {
+    warnIfReconfigured(AnalyticsPlatforms.TIKTOK, analyticsInstances[AnalyticsPlatforms.TIKTOK], tiktokConfig.measurementId)
+    analyticsInstances[AnalyticsPlatforms.TIKTOK] ??= new TikTok(tiktokConfig)
   }
 }
 

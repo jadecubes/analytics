@@ -14,12 +14,25 @@ const isStoredEvent = (item: unknown): boolean =>
   typeof item === 'object' && item !== null && typeof (item as { eventName?: unknown }).eventName === 'string'
 
 export abstract class Analytics<T extends BaseAnalyticsEvent> {
-  protected abstract readonly platform: AnalyticsPlatforms
+  // Set here, not by subclass fields: those are assigned only after this constructor returns
+  constructor(
+    protected readonly platform: AnalyticsPlatforms,
+    public readonly measurementId: string,
+  ) {
+    this.initialize()
+    this.replayPendingEvents()
+  }
+
   protected abstract initialize(): void
   protected abstract sendAnalyticsEvent(customEvent: T): void
 
   public processAnalyticsEvent(customEvent: T): void {
-    this.sendAnalyticsEvent(customEvent)
+    try {
+      this.sendAnalyticsEvent(customEvent)
+    }
+    catch (error) {
+      console.error(`[${this.platform}] sendEvent`, error)
+    }
   }
 
   /**

@@ -1,29 +1,11 @@
-import { type BaseAnalyticsEvent } from '../types/events.ts'
-import { Analytics, AnalyticsPlatforms } from './Analytics.ts'
+import { type BaseAnalyticsEvent } from '../types/events'
+import { Analytics, AnalyticsPlatforms } from './Analytics'
 export interface GA4Config {
   measurementId: string
 }
 export class Ga extends Analytics<BaseAnalyticsEvent> {
-  protected measurementId: string
-  private static instance: Ga | null = null
-  protected readonly platform = AnalyticsPlatforms.GA
-
   constructor(config: GA4Config) {
-    super()
-    this.measurementId = config.measurementId
-    this.initialize()
-    this.replayPendingEvents()
-  }
-
-  // Static getInstance method for singleton pattern
-  public static getInstance(config: GA4Config): Ga {
-    if (!Ga.instance) {
-      Ga.instance = new Ga(config)
-    }
-    else if (config.measurementId !== Ga.instance.measurementId) {
-      console.warn(`[GA] already initialized with ${Ga.instance.measurementId}; ignoring ${config.measurementId}`)
-    }
-    return Ga.instance
+    super(AnalyticsPlatforms.GA, config.measurementId)
   }
 
   protected initialize() {
@@ -52,21 +34,11 @@ export class Ga extends Analytics<BaseAnalyticsEvent> {
     }
   }
 
-  protected sendAnalyticsEvent(customEvent: BaseAnalyticsEvent): void {
-    const { eventName, eventParams } = customEvent
-
-    const gtagEvent = ['event', eventName, eventParams]
-
-    if (window.gtag) {
-      try {
-        window.gtag(...gtagEvent)
-      }
-      catch (error) {
-        console.error('[GA] sendEvent', error)
-      }
-    }
-    else {
+  protected sendAnalyticsEvent({ eventName, eventParams }: BaseAnalyticsEvent): void {
+    if (!window.gtag) {
       console.error('[GA] gtag is not defined')
+      return
     }
+    window.gtag('event', eventName, eventParams)
   }
 }

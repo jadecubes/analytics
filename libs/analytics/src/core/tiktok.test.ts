@@ -10,21 +10,6 @@ describe('TikTok Analytics', () => {
     // Arrange: clean state
     window.ttq = undefined
     document.head.innerHTML = ''
-    // @ts-expect-error: override singleton for test
-    TikTok.instance = null
-  })
-
-  describe('test_getInstance_multipleCallsSameConfig_returnsSameSingletonInstance', () => {
-    it('should return the same singleton instance when called multiple times', () => {
-      // Arrange: Config is already set up in beforeEach
-
-      // Act: Get two instances
-      const firstInstance = TikTok.getInstance(config)
-      const secondInstance = TikTok.getInstance(config)
-
-      // Assert: Both should be the same instance
-      expect(firstInstance).toBe(secondInstance)
-    })
   })
 
   describe('test_initialize_validConfig_injectsTikTokScriptIntoDOM', () => {
@@ -32,7 +17,7 @@ describe('TikTok Analytics', () => {
       // Arrange: Clean state ensured by beforeEach
 
       // Act: Create TikTok instance
-      TikTok.getInstance(config)
+      new TikTok(config)
 
       // Assert: Script should be injected with correct data-id
       const script = document.querySelector(`script[data-id="tiktok-pixel-${measurementId}"]`)
@@ -45,7 +30,7 @@ describe('TikTok Analytics', () => {
   describe('test_processAnalyticsEvent_validEvent_sendsEvent', () => {
     it('should send event when ttq is available and ready', () => {
       // Arrange: Setup TikTok instance and mock ttq
-      const tiktok = TikTok.getInstance(config)
+      const tiktok = new TikTok(config)
       const mockTtq = {
         track: vi.fn(),
         push: vi.fn(),
@@ -74,7 +59,7 @@ describe('TikTok Analytics', () => {
   describe('test_processAnalyticsEvent_multipleEvents_sendsAllInOrder', () => {
     it('should send multiple events in order', () => {
       // Arrange: Setup TikTok instance and multiple events
-      const tiktok = TikTok.getInstance(config)
+      const tiktok = new TikTok(config)
       const mockTtq = {
         track: vi.fn(),
         push: vi.fn(),
@@ -112,7 +97,7 @@ describe('TikTok Analytics', () => {
   describe('test_processAnalyticsEvent_ttqUndefined_handlesGracefully', () => {
     it('should not throw error when ttq is undefined', () => {
       // Arrange: Setup TikTok instance without ttq
-      const tiktok = TikTok.getInstance(config)
+      const tiktok = new TikTok(config)
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       const event: BaseAnalyticsEvent = {
@@ -136,7 +121,7 @@ describe('TikTok Analytics', () => {
   describe('test_processAnalyticsEvent_ttqTrackUndefined_handlesGracefully', () => {
     it('should handle gracefully when ttq.track is undefined', () => {
       // Arrange: Setup TikTok instance with ttq but without track method
-      const tiktok = TikTok.getInstance(config)
+      const tiktok = new TikTok(config)
       const mockTtq = {
         push: vi.fn(),
         page: vi.fn(),
@@ -158,7 +143,7 @@ describe('TikTok Analytics', () => {
   describe('test_processAnalyticsEvent_emptyEventParams_sendsEventWithoutParams', () => {
     it('should send event with empty params object', () => {
       // Arrange: Setup TikTok instance
-      const tiktok = TikTok.getInstance(config)
+      const tiktok = new TikTok(config)
       const mockTtq = {
         track: vi.fn(),
         push: vi.fn(),
@@ -183,7 +168,7 @@ describe('TikTok Analytics', () => {
   describe('test_processAnalyticsEvent_specialCharactersInEventName_handlesCorrectly', () => {
     it('should handle event names with special characters', () => {
       // Arrange: Setup TikTok instance
-      const tiktok = TikTok.getInstance(config)
+      const tiktok = new TikTok(config)
       const mockTtq = {
         track: vi.fn(),
         push: vi.fn(),
@@ -211,11 +196,8 @@ describe('TikTok Analytics', () => {
       const customId = 'CUSTOM-TT-ID-123'
       const customConfig = { measurementId: customId }
 
-      // @ts-expect-error: reset singleton
-      TikTok.instance = null
-
       // Act: Create instance with custom ID
-      TikTok.getInstance(customConfig)
+      new TikTok(customConfig)
 
       // Assert: Script should have custom ID in data-id
       const script = document.querySelector(`script[data-id="tiktok-pixel-${customId}"]`)
@@ -226,7 +208,7 @@ describe('TikTok Analytics', () => {
 
   describe('test_processAnalyticsEvent_eventId_passedAsEventIdOption', () => {
     it('should pass eventId to TikTok as event_id for deduplication', () => {
-      const tiktok = TikTok.getInstance(config)
+      const tiktok = new TikTok(config)
       const mockTtq = { track: vi.fn(), push: vi.fn(), page: vi.fn(), load: vi.fn() }
       window.ttq = mockTtq
 

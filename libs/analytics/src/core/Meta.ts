@@ -1,5 +1,5 @@
-import { type BaseAnalyticsEvent } from '../types/events.ts'
-import { Analytics, AnalyticsPlatforms } from './Analytics.ts'
+import { type BaseAnalyticsEvent } from '../types/events'
+import { Analytics, AnalyticsPlatforms } from './Analytics'
 
 // https://developers.facebook.com/docs/meta-pixel/reference#standard-events
 const STANDARD_EVENTS = new Set([
@@ -13,26 +13,8 @@ export interface MetaPixelConfig {
 }
 
 export class Meta extends Analytics<BaseAnalyticsEvent> {
-  protected measurementId: string
-  private static instance: Meta | null = null
-  protected readonly platform = AnalyticsPlatforms.META
-
   constructor(config: MetaPixelConfig) {
-    super()
-    this.measurementId = config.measurementId
-    this.initialize()
-    this.replayPendingEvents()
-  }
-
-  // Static getInstance method for singleton pattern
-  public static getInstance(config: MetaPixelConfig): Meta {
-    if (!Meta.instance) {
-      Meta.instance = new Meta(config)
-    }
-    else if (config.measurementId !== Meta.instance.measurementId) {
-      console.warn(`[META] already initialized with ${Meta.instance.measurementId}; ignoring ${config.measurementId}`)
-    }
-    return Meta.instance
+    super(AnalyticsPlatforms.META, config.measurementId)
   }
 
   protected initialize(): void {
@@ -57,22 +39,17 @@ export class Meta extends Analytics<BaseAnalyticsEvent> {
     }
   }
 
-  protected sendAnalyticsEvent(customEvent: BaseAnalyticsEvent): void {
-    const { eventName, eventParams, eventId } = customEvent
+  protected sendAnalyticsEvent({ eventName, eventParams, eventId }: BaseAnalyticsEvent): void {
+    if (!window.fbq) {
+      console.error('[META] fbq is not defined')
+      return
+    }
     const command = STANDARD_EVENTS.has(eventName) ? 'track' : 'trackCustom'
-    const fbqEvent = eventId
-      ? [command, eventName, eventParams, { eventID: eventId }]
-      : [command, eventName, eventParams]
-    if (window.fbq) {
-      try {
-        window.fbq(...fbqEvent)
-      }
-      catch (error) {
-        console.error('[META] sendEvent', error)
-      }
+    if (eventId) {
+      window.fbq(command, eventName, eventParams, { eventID: eventId })
     }
     else {
-      console.error('[META] fbq is not defined')
+      window.fbq(command, eventName, eventParams)
     }
   }
 }

@@ -6,6 +6,7 @@ import { createAnalyticsProviders, getAnalyticsInstance } from './createAnalytic
 describe('createAnalyticsProviders', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
+    vi.restoreAllMocks()
   })
 
   it('test_withoutWindow_doesNothingInsteadOfThrowing', () => {
@@ -21,5 +22,18 @@ describe('createAnalyticsProviders', () => {
 
     expect(getAnalyticsInstance(AnalyticsPlatforms.GA)).toBeInstanceOf(Ga)
     expect(getAnalyticsInstance(AnalyticsPlatforms.TIKTOK)).toBeUndefined()
+  })
+
+  it('test_secondCall_keepsFirstInstanceAndWarnsOnDifferentId', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    createAnalyticsProviders({ [AnalyticsPlatforms.META]: { measurementId: 'META-1' } })
+    const first = getAnalyticsInstance(AnalyticsPlatforms.META)
+
+    createAnalyticsProviders({ [AnalyticsPlatforms.META]: { measurementId: 'META-1' } })
+    expect(warnSpy).not.toHaveBeenCalled()
+    createAnalyticsProviders({ [AnalyticsPlatforms.META]: { measurementId: 'META-2' } })
+
+    expect(getAnalyticsInstance(AnalyticsPlatforms.META)).toBe(first)
+    expect(warnSpy).toHaveBeenCalledOnce()
   })
 })

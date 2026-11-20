@@ -11,21 +11,6 @@ describe('Google Analytics (GA4)', () => {
     window.gtag = undefined
     window.dataLayer = undefined
     document.head.innerHTML = ''
-    // @ts-expect-error: override singleton
-    Ga.instance = null
-  })
-
-  describe('test_getInstance_multipleCallsSameConfig_returnsSameSingletonInstance', () => {
-    it('should return the same singleton instance when called multiple times', () => {
-      // Arrange: Config is already set up in beforeEach
-
-      // Act: Get two instances
-      const firstInstance = Ga.getInstance(config)
-      const secondInstance = Ga.getInstance(config)
-
-      // Assert: Both should be the same instance
-      expect(firstInstance).toBe(secondInstance)
-    })
   })
 
   describe('test_initialize_validConfig_injectsGtagScriptIntoDOM', () => {
@@ -33,7 +18,7 @@ describe('Google Analytics (GA4)', () => {
       // Arrange: Clean state ensured by beforeEach
 
       // Act: Create GA instance
-      Ga.getInstance(config)
+      new Ga(config)
 
       // Assert: Script should be injected with correct URL
       const script = document.querySelector(`script[src="https://www.googletagmanager.com/gtag/js?id=${measurementId}"]`) as HTMLScriptElement
@@ -45,7 +30,7 @@ describe('Google Analytics (GA4)', () => {
       // Arrange: Clean state ensured by beforeEach
 
       // Act: Create GA instance
-      Ga.getInstance(config)
+      new Ga(config)
 
       // Assert: dataLayer should be initialized
       expect(window.dataLayer).toBeDefined()
@@ -56,7 +41,7 @@ describe('Google Analytics (GA4)', () => {
       // Arrange: Clean state ensured by beforeEach
 
       // Act: Create GA instance
-      Ga.getInstance(config)
+      new Ga(config)
 
       // Assert: gtag function should be defined
       expect(typeof window.gtag).toBe('function')
@@ -69,7 +54,7 @@ describe('Google Analytics (GA4)', () => {
       window.dataLayer = []
 
       // Act: Create GA instance
-      Ga.getInstance(config)
+      new Ga(config)
 
       // Assert: gtag should remain the same mock
       expect(window.gtag).toBe(mockGtag)
@@ -79,7 +64,7 @@ describe('Google Analytics (GA4)', () => {
   describe('test_processAnalyticsEvent_validEvent_sendsEvent', () => {
     it('should send event when gtag is available and ready', () => {
       // Arrange: Setup GA instance and mock gtag
-      const ga = Ga.getInstance(config)
+      const ga = new Ga(config)
       const mockGtag = vi.fn()
       window.gtag = mockGtag
 
@@ -104,7 +89,7 @@ describe('Google Analytics (GA4)', () => {
   describe('test_processAnalyticsEvent_multipleEvents_sendsAllInOrder', () => {
     it('should send multiple events in order', () => {
       // Arrange: Setup GA instance and multiple events
-      const ga = Ga.getInstance(config)
+      const ga = new Ga(config)
       const mockGtag = vi.fn()
       window.gtag = mockGtag
 
@@ -137,7 +122,7 @@ describe('Google Analytics (GA4)', () => {
   describe('test_processAnalyticsEvent_gtagUndefined_handlesGracefully', () => {
     it('should not throw error when gtag is undefined', () => {
       // Arrange: Setup GA instance without gtag
-      const ga = Ga.getInstance(config)
+      const ga = new Ga(config)
       window.gtag = undefined
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
@@ -162,7 +147,7 @@ describe('Google Analytics (GA4)', () => {
   describe('test_processAnalyticsEvent_emptyEventParams_sendsEventWithoutParams', () => {
     it('should send event with empty params object', () => {
       // Arrange: Setup GA instance
-      const ga = Ga.getInstance(config)
+      const ga = new Ga(config)
       const mockGtag = vi.fn()
       window.gtag = mockGtag
 
@@ -186,7 +171,7 @@ describe('Google Analytics (GA4)', () => {
       window.dataLayer = [existingData]
 
       // Act: Create GA instance
-      Ga.getInstance(config)
+      new Ga(config)
 
       // Assert: Existing data should be preserved
       expect(window.dataLayer).toContain(existingData)
@@ -197,7 +182,7 @@ describe('Google Analytics (GA4)', () => {
   describe('test_processAnalyticsEvent_complexEventParams_sendsAllParameters', () => {
     it('should handle complex nested event parameters', () => {
       // Arrange: Setup GA instance
-      const ga = Ga.getInstance(config)
+      const ga = new Ga(config)
       const mockGtag = vi.fn()
       window.gtag = mockGtag
 
@@ -236,11 +221,8 @@ describe('Google Analytics (GA4)', () => {
       const customId = 'G-CUSTOM123'
       const customConfig = { measurementId: customId }
 
-      // @ts-expect-error: reset singleton
-      Ga.instance = null
-
       // Act: Create instance with custom ID
-      Ga.getInstance(customConfig)
+      new Ga(customConfig)
 
       // Assert: Script should use custom measurement ID
       const script = document.querySelector(`script[src="https://www.googletagmanager.com/gtag/js?id=${customId}"]`)
@@ -251,7 +233,7 @@ describe('Google Analytics (GA4)', () => {
   describe('test_processAnalyticsEvent_specialCharactersInEventName_handlesCorrectly', () => {
     it('should handle event names with underscores and lowercase', () => {
       // Arrange: Setup GA instance
-      const ga = Ga.getInstance(config)
+      const ga = new Ga(config)
       const mockGtag = vi.fn()
       window.gtag = mockGtag
 
@@ -273,7 +255,7 @@ describe('Google Analytics (GA4)', () => {
   describe('test_processAnalyticsEvent_boundaryValues_handlesCorrectly', () => {
     it('should handle zero value in event parameters', () => {
       // Arrange: Setup GA instance
-      const ga = Ga.getInstance(config)
+      const ga = new Ga(config)
       const mockGtag = vi.fn()
       window.gtag = mockGtag
 
@@ -294,7 +276,7 @@ describe('Google Analytics (GA4)', () => {
 
     it('should handle very large values in event parameters', () => {
       // Arrange: Setup GA instance
-      const ga = Ga.getInstance(config)
+      const ga = new Ga(config)
       const mockGtag = vi.fn()
       window.gtag = mockGtag
 
@@ -316,7 +298,7 @@ describe('Google Analytics (GA4)', () => {
 
   describe('test_initialize_gtagStub_pushesArgumentsObject', () => {
     it('should push the arguments object, which is the only form gtag.js reads', () => {
-      Ga.getInstance(config)
+      new Ga(config)
 
       expect(Object.prototype.toString.call(window.dataLayer?.[0])).toBe('[object Arguments]')
     })
@@ -328,7 +310,7 @@ describe('Google Analytics (GA4)', () => {
       window.gtag = pageGtag
       window.dataLayer = []
 
-      Ga.getInstance(config)
+      new Ga(config)
 
       expect(pageGtag).toHaveBeenCalledWith('config', measurementId)
     })
@@ -341,7 +323,7 @@ describe('Google Analytics (GA4)', () => {
       window.gtag = pageGtag
       window.dataLayer = []
 
-      Ga.getInstance(config)
+      new Ga(config)
 
       expect(pageGtag).not.toHaveBeenCalledWith('config', measurementId)
     })

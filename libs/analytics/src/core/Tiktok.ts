@@ -1,37 +1,19 @@
-import { type BaseAnalyticsEvent } from '../types/events.ts'
-import { Analytics, AnalyticsPlatforms } from './Analytics.ts'
+import { type BaseAnalyticsEvent } from '../types/events'
+import { Analytics, AnalyticsPlatforms } from './Analytics'
 
 export interface TikTokPixelConfig {
   measurementId: string
 }
 export class TikTok extends Analytics<BaseAnalyticsEvent> {
-  protected measurementId: string
-  private static instance: TikTok | null = null
-  protected readonly platform = AnalyticsPlatforms.TIKTOK
   constructor(config: TikTokPixelConfig) {
-    super()
-    this.measurementId = config.measurementId
-    this.initialize()
-    this.replayPendingEvents()
-  }
-
-  // Static getInstance method for singleton pattern
-  public static getInstance(config: TikTokPixelConfig): TikTok {
-    if (!TikTok.instance) {
-      TikTok.instance = new TikTok(config)
-    }
-    else if (config.measurementId !== TikTok.instance.measurementId) {
-      console.warn(`[TT] already initialized with ${TikTok.instance.measurementId}; ignoring ${config.measurementId}`)
-    }
-    return TikTok.instance
+    super(AnalyticsPlatforms.TIKTOK, config.measurementId)
   }
 
   protected initialize(): void {
     const head = document.querySelector('head')
     const existingScript = document.querySelector(`script[data-id="tiktok-pixel-${this.measurementId}"]`)
 
-    // Confirm only init once
-    // Converted textContent is in sc-44553
+    // Inject the snippet only once per pixel id
     if (!existingScript) {
       const script = document.createElement('script')
       script.setAttribute('data-id', `tiktok-pixel-${this.measurementId}`)
@@ -66,23 +48,16 @@ export class TikTok extends Analytics<BaseAnalyticsEvent> {
     }
   }
 
-  protected sendAnalyticsEvent(customEvent: BaseAnalyticsEvent): void {
-    const { eventName, eventParams, eventId } = customEvent
-    if (window.ttq) {
-      try {
-        if (eventId) {
-          window.ttq.track?.(eventName, eventParams, { event_id: eventId })
-        }
-        else {
-          window.ttq.track?.(eventName, eventParams)
-        }
-      }
-      catch (error) {
-        console.error('[TT] sendEvent', error)
-      }
+  protected sendAnalyticsEvent({ eventName, eventParams, eventId }: BaseAnalyticsEvent): void {
+    if (!window.ttq) {
+      console.error('[TT] ttq is not defined')
+      return
+    }
+    if (eventId) {
+      window.ttq.track?.(eventName, eventParams, { event_id: eventId })
     }
     else {
-      console.error('[TT] ttq is not defined')
+      window.ttq.track?.(eventName, eventParams)
     }
   }
 }

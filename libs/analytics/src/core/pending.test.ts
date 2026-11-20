@@ -7,12 +7,8 @@ const metaConfig = { measurementId: 'META-TEST-ID' }
 const gaConfig = { measurementId: 'G-TEST' }
 const metaKey = `${PENDING_EVENTS_KEY_PREFIX}META`
 
-// A new page load: fresh singletons, fresh DOM, sessionStorage kept
+// A new page load: fresh DOM, sessionStorage kept
 const simulateNextPageLoad = () => {
-  // @ts-expect-error reset singleton for testing
-  Meta.instance = null
-  // @ts-expect-error reset singleton for testing
-  Ga.instance = null
   document.head.innerHTML = ''
 }
 
@@ -29,7 +25,7 @@ describe('sendAnalyticsPendingEvent', () => {
   })
 
   it('test_sendAnalyticsPendingEvent_savesInsteadOfSending', () => {
-    const meta = Meta.getInstance(metaConfig)
+    const meta = new Meta(metaConfig)
     const mockFbq = vi.fn()
     window.fbq = mockFbq
 
@@ -42,14 +38,14 @@ describe('sendAnalyticsPendingEvent', () => {
   })
 
   it('test_nextPageLoad_sendsPendingEventsInOrderAndClearsThem', () => {
-    const meta = Meta.getInstance(metaConfig)
+    const meta = new Meta(metaConfig)
     meta.sendAnalyticsPendingEvent({ eventName: 'AddToCart', eventParams: {} })
     meta.sendAnalyticsPendingEvent({ eventName: 'InitiateCheckout', eventParams: {} })
 
     simulateNextPageLoad()
     const mockFbq = vi.fn()
     window.fbq = mockFbq
-    Meta.getInstance(metaConfig)
+    new Meta(metaConfig)
 
     expect(mockFbq).toHaveBeenNthCalledWith(1, 'track', 'AddToCart', {})
     expect(mockFbq).toHaveBeenNthCalledWith(2, 'track', 'InitiateCheckout', {})
@@ -57,19 +53,19 @@ describe('sendAnalyticsPendingEvent', () => {
   })
 
   it('test_nextPageLoad_eachPlatformReplaysOnlyItsOwnEvents', () => {
-    Meta.getInstance(metaConfig).sendAnalyticsPendingEvent({ eventName: 'Purchase', eventParams: {} })
+    new Meta(metaConfig).sendAnalyticsPendingEvent({ eventName: 'Purchase', eventParams: {} })
 
     simulateNextPageLoad()
     const mockGtag = vi.fn()
     window.gtag = mockGtag
-    Ga.getInstance(gaConfig)
+    new Ga(gaConfig)
 
     expect(mockGtag).not.toHaveBeenCalledWith('event', 'Purchase', expect.anything())
     expect(window.sessionStorage.getItem(metaKey)).not.toBeNull()
   })
 
   it('test_sessionStorageUnavailable_sendsImmediately', () => {
-    const meta = Meta.getInstance(metaConfig)
+    const meta = new Meta(metaConfig)
     const mockFbq = vi.fn()
     window.fbq = mockFbq
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
@@ -86,18 +82,18 @@ describe('sendAnalyticsPendingEvent', () => {
     const mockFbq = vi.fn()
     window.fbq = mockFbq
 
-    expect(() => Meta.getInstance(metaConfig)).not.toThrow()
+    expect(() => new Meta(metaConfig)).not.toThrow()
     expect(mockFbq).not.toHaveBeenCalled()
     expect(window.sessionStorage.getItem(metaKey)).toBeNull()
   })
 
   it('test_nextPageLoad_replaysGaPendingEventsThroughGtag', () => {
-    Ga.getInstance(gaConfig).sendAnalyticsPendingEvent({ eventName: 'purchase', eventParams: { value: 3 } })
+    new Ga(gaConfig).sendAnalyticsPendingEvent({ eventName: 'purchase', eventParams: { value: 3 } })
 
     simulateNextPageLoad()
     const mockGtag = vi.fn()
     window.gtag = mockGtag
-    Ga.getInstance(gaConfig)
+    new Ga(gaConfig)
 
     expect(mockGtag).toHaveBeenCalledWith('event', 'purchase', { value: 3 })
   })
@@ -107,7 +103,7 @@ describe('sendAnalyticsPendingEvent', () => {
     const mockFbq = vi.fn()
     window.fbq = mockFbq
 
-    expect(() => Meta.getInstance(metaConfig)).not.toThrow()
+    expect(() => new Meta(metaConfig)).not.toThrow()
     expect(mockFbq).toHaveBeenCalledTimes(1)
     expect(mockFbq).toHaveBeenCalledWith('track', 'Purchase', {})
   })
