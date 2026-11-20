@@ -1,5 +1,5 @@
 <p align="center">
-  <img src=".github/assets/logo.svg" alt="Analytics Logo" />
+  <img src="https://raw.githubusercontent.com/jadecubes/analytics/main/.github/assets/logo.svg" alt="Analytics Logo" />
 </p>
 
 <p align="center">
@@ -7,7 +7,7 @@
 [![npm version](https://img.shields.io/npm/v/@jadecubes/analytics.svg)](https://www.npmjs.com/package/@jadecubes/analytics)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/@jadecubes/analytics)](https://bundlephobia.com/package/@jadecubes/analytics)
 [![Build Status](https://img.shields.io/github/actions/workflow/status/jadecubes/analytics/ci.yml?branch=main)](https://github.com/jadecubes/analytics/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/jadecubes/analytics/blob/main/LICENSE)
 
 </p>
 
@@ -168,8 +168,8 @@ export function PurchaseButton() {
 
 ## 🤝 Contributing
 
-Development setup, scripts and publishing steps are in [CONTRIBUTING.md](CONTRIBUTING.md).
+Development setup, scripts and publishing steps are in [CONTRIBUTING.md](https://github.com/jadecubes/analytics/blob/main/CONTRIBUTING.md).
 
 ## 📄 License
 
-[MIT](LICENSE)
+[MIT](https://github.com/jadecubes/analytics/blob/main/LICENSE)
