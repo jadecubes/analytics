@@ -15,6 +15,7 @@ export class TikTok extends Analytics {
     if (document.querySelector(`script[data-id="${snippetId}"]`)) return
     // TikTok's snippet resets an existing ttq's methods, so beside the page's own pixel only load ours
     if (window.ttq) {
+      if (window.ttq._i?.[this.measurementId]) return
       window.ttq.load(this.measurementId)
       window.ttq.instance(this.measurementId).page()
       return

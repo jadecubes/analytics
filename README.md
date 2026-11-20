@@ -125,7 +125,7 @@ tiktok?.processAnalyticsEvent({
 
 The `processAnalyticsEvent` method:
 - Hands the event to the platform straight away. Until the platform's script loads, its own stub (`gtag`, `fbq`, `ttq`) holds the event, so you can call it right after initialization
-- Sends each event only to the configured property or pixel, not to others the page may also run: GA4 with `send_to`, Meta with `fbq('trackSingle')` (or `trackSingleCustom` for names outside Meta's [standard events](https://developers.facebook.com/docs/meta-pixel/reference#standard-events)), TikTok with `ttq.instance(id)`
+- Sends each event only to the configured property or pixel, not to others the page may also run: GA4 with `send_to`, Meta with `fbq('trackSingle')` (or `trackSingleCustom` for names outside Meta's [standard events](https://developers.facebook.com/docs/meta-pixel/reference#standard-events)), TikTok with `ttq.instance(id)`. Untargeted calls the page makes itself, such as a global `ttq.track(...)`, still reach every pixel, including ours
 - Passes `eventId`, if you set one, to Meta (`eventID`) and TikTok (`event_id`) so they can deduplicate it against server-side events
 
 ### Events Right Before a Page Navigation
@@ -245,9 +245,9 @@ This library is published as `@jadecubes/analytics` on npm. If you're a maintain
    ls -la dist/libs/analytics/
    ```
 
-4. **Copy package.json and README.md to dist**: both need to be in the published directory
+4. **Copy package.json, README.md and LICENSE to dist**: all three need to be in the published directory
    ```bash
-   cp libs/analytics/package.json README.md dist/libs/analytics/
+   cp libs/analytics/package.json README.md LICENSE dist/libs/analytics/
    ```
 
 5. **Publish to npm**:
@@ -258,27 +258,17 @@ This library is published as `@jadecubes/analytics` on npm. If you're a maintain
 
 ### Automated Publishing (Recommended)
 
-The root `package.json` already has a publish script:
+Run the root `package.json`'s publish script, which does steps 2, 4 and 5 for you:
 
-```json
-{
-  "scripts": {
-    "publish:analytics": "pnpm build && cp libs/analytics/package.json README.md dist/libs/analytics/ && cd dist/libs/analytics && npm publish --access public"
-  }
-}
-```
-
-Then simply run:
 ```bash
 pnpm publish:analytics
 ```
 
 ### Publishing Beta/Alpha Versions
 
-For pre-release versions:
+For pre-release versions, set a pre-release version such as `0.1.0-beta.1` (step 1), build and copy (steps 2 and 4), then publish with a tag:
 
 ```bash
-# Update version to include tag, e.g., "0.1.0-beta.1"
 cd dist/libs/analytics
 npm publish --access public --tag beta
 ```
