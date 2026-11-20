@@ -29,7 +29,6 @@ Modern front-ends often require multiple analytics platforms. Analytics offers:
 - Loads each platform's script **once**; events sent before it finishes loading wait in the platform's own queue.
 - Built with **TypeScript**: exports `BaseAnalyticsEvent`, `AnalyticsConfig` and each platform's config type.
 - **Framework-agnostic**: plain functions you can call from React or any other code.
-- Built with **Vite** for optimal bundle size and performance.
 
 ---
 
@@ -37,7 +36,7 @@ Modern front-ends often require multiple analytics platforms. Analytics offers:
 
 - Front-end engineers who want to track events across multiple analytics platforms.
 - Teams looking for a shared analytics library with a consistent API.
-- Developers who want a lightweight, configurable alternative to multiple SDKs.
+- Developers who want one small API over the three platforms' scripts.
 
 ---
 
@@ -200,7 +199,7 @@ export function PurchaseButton() {
 | Adding a platform | Change the library | Write or install a plugin |
 | Translating one event into each platform's event and parameters | No | No: each plugin receives the same name |
 | Changing or blocking events before they're sent (consent, personal data) | No | Lifecycle hooks, and plugins can be turned off* |
-| User identity and page views | No `identify`; page views come from each platform's snippet | `identify`, `page`, `reset`* |
+| User identity and page views | No `identify`; one page view per platform at setup, none on route changes | `identify`, `page`, `reset`* |
 | Events fired right before a page navigation | `sendAnalyticsPendingEvent` saves them and sends them on the next page | Not built in* |
 | Deduplicating with server-side events | `eventId` sent to Meta (`eventID`) and TikTok (`event_id`) | Up to each plugin* |
 | Pages that already run other properties or pixels | Sends only to the configured id (`send_to`, `trackSingle`, `ttq.instance`) | Up to each plugin* |
@@ -208,8 +207,6 @@ export function PurchaseButton() {
 | Event typing | `eventParams: Record<string, unknown>` | Loose payload types* |
 | Size | About 2.2 kB gzipped (ES build) | Core plus each plugin |
 | Maturity | Early (0.0.x), few users | Years of use, many plugins, still maintained |
-
-Where this package is ahead: events before a navigation, sending only to the configured ids, and `eventId` handling, with no plugins to choose. Where `analytics` is ahead: one call for every platform, plugins, hooks for consent and personal data, and user identity.
 
 ---
 

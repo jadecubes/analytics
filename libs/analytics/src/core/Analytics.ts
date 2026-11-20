@@ -21,6 +21,7 @@ export abstract class Analytics {
     }
     catch (error) {
       console.error(`[${this.platform}] initialize`, error)
+      return
     }
     this.replayPendingEvents()
   }

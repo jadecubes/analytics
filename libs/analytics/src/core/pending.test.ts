@@ -133,4 +133,17 @@ describe('sendAnalyticsPendingEvent', () => {
     expect(mockFbq).not.toHaveBeenCalledWith('trackSingle', 'OTHER-PIXEL', 'Purchase', {})
     expect(window.sessionStorage.getItem(metaKey)).not.toBeNull()
   })
+
+  it('keeps saved events for later when the platform fails to set up', () => {
+    new Meta({ measurementId: metaId }).sendAnalyticsPendingEvent({ eventName: 'Purchase', eventParams: {} })
+
+    simulateNextPageLoad()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    window.fbq = () => {
+      throw new Error('page fbq is broken')
+    }
+    new Meta({ measurementId: metaId })
+
+    expect(window.sessionStorage.getItem(metaKey)).not.toBeNull()
+  })
 })
