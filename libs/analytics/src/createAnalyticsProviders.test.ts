@@ -52,4 +52,22 @@ describe('createAnalyticsProviders', () => {
     expect(getAnalyticsInstance(AnalyticsPlatforms.GA)).toBeUndefined()
     expect(document.querySelector('script[src*="googletagmanager"]')).toBeNull()
   })
+
+  it('keeps setting up the other platforms when one throws during setup', async () => {
+    const { createAnalyticsProviders, getAnalyticsInstance } = await loadModule()
+    const error = new Error('page fbq is broken')
+    window.fbq = () => {
+      throw error
+    }
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(() => createAnalyticsProviders({
+      [AnalyticsPlatforms.META]: { measurementId: 'META-1' },
+      [AnalyticsPlatforms.TIKTOK]: { measurementId: 'TT-1' },
+    })).not.toThrow()
+
+    expect(errorSpy).toHaveBeenCalledWith('[META] initialize', error)
+    expect(getAnalyticsInstance(AnalyticsPlatforms.TIKTOK)?.measurementId).toBe('TT-1')
+    window.fbq = undefined
+  })
 })

@@ -16,7 +16,12 @@ export abstract class Analytics {
     protected readonly platform: AnalyticsPlatforms,
     public readonly measurementId: string,
   ) {
-    this.initialize()
+    try {
+      this.initialize()
+    }
+    catch (error) {
+      console.error(`[${this.platform}] initialize`, error)
+    }
     this.replayPendingEvents()
   }
 
