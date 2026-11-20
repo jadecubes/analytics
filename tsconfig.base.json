@@ -5,9 +5,6 @@
     "sourceMap": true,
     "declaration": false,
     "moduleResolution": "node",
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "importHelpers": true,
     "target": "es2015",
     "module": "esnext",
     "lib": ["es2020", "dom"],
@@ -16,11 +13,7 @@
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
     "allowJs": true,
-    "skipDefaultLibCheck": true,
-    "baseUrl": ".",
-    "paths": {
-      "@analytics": ["libs/analytics/src/index.ts"]
-    }
+    "skipDefaultLibCheck": true
   },
   "exclude": ["node_modules", "tmp"]
 }

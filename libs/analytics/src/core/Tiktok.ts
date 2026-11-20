@@ -1,37 +1,27 @@
-import { type BaseAnalyticsEvent } from '../types/events.ts'
-import { Analytics } from './Analytics.ts'
+import { type BaseAnalyticsEvent } from '../types/events'
+import { Analytics, AnalyticsPlatforms } from './Analytics'
 
 export interface TikTokPixelConfig {
   measurementId: string
 }
-export class TikTok extends Analytics<BaseAnalyticsEvent> {
-  protected measurementId: string
-  private static instance: TikTok | null = null
-  constructor(config: TikTokPixelConfig) {
-    super()
-    this.measurementId = config.measurementId
-    this.initialize()
-  }
 
-  // Static getInstance method for singleton pattern
-  public static getInstance(config: TikTokPixelConfig): TikTok {
-    if (!TikTok.instance) {
-      TikTok.instance = new TikTok(config)
-    }
-    return TikTok.instance
+export class TikTok extends Analytics {
+  constructor(config: TikTokPixelConfig) {
+    super(AnalyticsPlatforms.TIKTOK, config.measurementId)
   }
 
   protected initialize(): void {
-    this.setIsReady(false)
-    const head = document.querySelector('head')
-    const existingScript = document.querySelector(`script[data-id="tiktok-pixel-${this.measurementId}"]`)
-
-    // Confirm only init once
-    // Converted textContent is in sc-44553
-    if (!existingScript) {
-      const script = document.createElement('script')
-      script.setAttribute('data-id', `tiktok-pixel-${this.measurementId}`)
-      script.textContent = `
+    const snippetId = `tiktok-pixel-${this.measurementId}`
+    if (document.querySelector(`script[data-id="${snippetId}"]`)) return
+    // TikTok's snippet resets an existing ttq's methods, so beside the page's own pixel only load ours
+    if (window.ttq) {
+      window.ttq.load(this.measurementId)
+      window.ttq.instance(this.measurementId).page()
+      return
+    }
+    const script = document.createElement('script')
+    script.setAttribute('data-id', snippetId)
+    script.textContent = `
       !function (w, d, t) {
         w.TiktokAnalyticsObject = t;
         var ttq = w[t] = w[t] || [];
@@ -58,29 +48,20 @@ export class TikTok extends Analytics<BaseAnalyticsEvent> {
         ttq.page();
       }(window, document, 'ttq');
       `
-      script.onload = () => {
-        this.setIsReady(true)
-      }
-      head?.appendChild(script)
-    }
-    else { this.setIsReady(true) }
+    document.head.appendChild(script)
   }
 
-  protected sendAnalyticsEvent(customEvent: BaseAnalyticsEvent): number {
-    const { eventName, eventParams } = customEvent
-    if (window.ttq) {
-      try {
-        window.ttq.track?.(eventName, eventParams)
-        return 0
-      }
-      catch (error) {
-        console.error('[TT] sendEvent', error)
-        return -1
-      }
+  protected sendAnalyticsEvent({ eventName, eventParams, eventId }: BaseAnalyticsEvent): void {
+    if (!window.ttq) {
+      console.error(`[${this.platform}] ttq is not defined`)
+      return
+    }
+    const pixel = window.ttq.instance(this.measurementId)
+    if (eventId) {
+      pixel.track(eventName, eventParams, { event_id: eventId })
     }
     else {
-      console.error('[TT] ttq is not defined')
-      return -1
+      pixel.track(eventName, eventParams)
     }
   }
 }

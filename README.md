@@ -9,7 +9,6 @@
 [![Build Status](https://img.shields.io/github/actions/workflow/status/jadecubes/Analytics/ci.yml?branch=main)](https://github.com/jadecubes/Analytics/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-18.3-blue)](https://reactjs.org/)
 
 </p>
 
@@ -18,7 +17,7 @@
 </p>
 
 <p align="center">
-  Built for React applications and beyond
+  Works in React apps or any other front-end
 </p>
 
 ---
@@ -26,19 +25,18 @@
 ## 🎯 Why Analytics?
 
 Modern front-ends often require multiple analytics platforms. Analytics offers:
-- A **single API** that works across GA4, Meta Pixel, and TikTok Pixel.
-- **Lazy loading** of tracking scripts and automatic queueing of events.
-- Built with **TypeScript**, offering type definitions out of the box.
-- Designed for **React** (hooks + context) but easy to adapt.
-- Built with **Vite** for optimal bundle size and performance.
+- The **same API** for GA4, Meta Pixel, and TikTok Pixel.
+- Loads each platform's script **once**; events sent before it finishes loading wait in the platform's own queue.
+- Built with **TypeScript**: exports `BaseAnalyticsEvent`, `AnalyticsConfig` and each platform's config type.
+- **Framework-agnostic**: plain functions you can call from React or any other code.
 
 ---
 
 ## 🧑‍💻 Who Should Use It?
 
-- Front-end engineers using React who want to track events across multiple analytics platforms.
+- Front-end engineers who want to track events across multiple analytics platforms.
 - Teams looking for a shared analytics library with a consistent API.
-- Developers who want a lightweight, configurable alternative to multiple SDKs.
+- Developers who want one small API over the three platforms' scripts.
 
 ---
 
@@ -126,57 +124,89 @@ tiktok?.processAnalyticsEvent({
 ### Understanding Event Processing
 
 The `processAnalyticsEvent` method:
-- **Queues events** if the analytics script isn't loaded yet
-- **Automatically sends queued events** once the platform is ready
-- **Handles lazy loading** - you can call it immediately after initialization without worrying about script load timing
+- Hands the event to the platform straight away. Until the platform's script loads, its own stub (`gtag`, `fbq`, `ttq`) holds the event, so you can call it right after initialization
+- Sends each event only to the configured property or pixel, not to others the page may also run: GA4 with `send_to`, Meta with `fbq('trackSingle')` (or `trackSingleCustom` for names outside Meta's [standard events](https://developers.facebook.com/docs/meta-pixel/reference#standard-events)), TikTok with `ttq.instance(id)`
+- Passes `eventId`, if you set one, to Meta (`eventID`) and TikTok (`event_id`) so they can deduplicate it against server-side events
 
-### React Integration
+### Events Right Before a Page Navigation
+
+An event sent just before a full-page navigation (a link, a form submit, `window.location = …`) can be lost when the page unloads. `sendAnalyticsPendingEvent` saves the event in `sessionStorage` instead, and the platform sends it the next time it is initialized, on the next page:
 
 ```typescript
-import { useEffect } from 'react'
-import { createAnalyticsProviders, getAnalyticsInstance, AnalyticsPlatforms } from '@jadecubes/analytics'
+const meta = getAnalyticsInstance(AnalyticsPlatforms.META)
 
-function App() {
-  useEffect(() => {
-    // Initialize on app mount
-    createAnalyticsProviders({
-      [AnalyticsPlatforms.GA]: { measurementId: 'G-XXXXXXXXXX' },
-      [AnalyticsPlatforms.META]: { measurementId: 'YOUR_PIXEL_ID' },
-      [AnalyticsPlatforms.TIKTOK]: { measurementId: 'YOUR_TIKTOK_PIXEL_ID' }
-    })
-  }, [])
+meta?.sendAnalyticsPendingEvent({
+  eventName: 'InitiateCheckout',
+  eventParams: { value: 99.99, currency: 'USD' },
+  eventId: 'checkout-12345',
+})
+window.location.href = '/checkout'
+```
 
+- Pending events are kept per platform and id, so call it on every platform that should receive the event.
+- The event is sent from the next page, so the platform records that page and time. Put anything you need from the current page in `eventParams`.
+- `sessionStorage` is per tab and per origin (scheme, host and port). If the navigation doesn't happen or leaves the origin, the event is sent the next time this tab sets the platform up on this origin, late and attributed to that page.
+- If `sessionStorage` is unavailable, the event is sent immediately instead.
+
+### Using It in React
+
+Call `createAnalyticsProviders` in your client entry file, before the first render. `getAnalyticsInstance` returns `undefined` until it has run, and React runs child effects before a parent's `useEffect`, so setting it up inside `App` would drop events that children send on mount. On the server it does nothing.
+
+```tsx
+// main.tsx
+import { createRoot } from 'react-dom/client'
+import { createAnalyticsProviders, AnalyticsPlatforms } from '@jadecubes/analytics'
+import { App } from './App'
+
+createAnalyticsProviders({
+  [AnalyticsPlatforms.GA]: { measurementId: 'G-XXXXXXXXXX' },
+  [AnalyticsPlatforms.META]: { measurementId: 'YOUR_PIXEL_ID' },
+})
+
+createRoot(document.getElementById('root')!).render(<App />)
+```
+
+```tsx
+// PurchaseButton.tsx
+import { getAnalyticsInstance, AnalyticsPlatforms } from '@jadecubes/analytics'
+
+export function PurchaseButton() {
   const handlePurchase = () => {
-    const ga = getAnalyticsInstance(AnalyticsPlatforms.GA)
-    const meta = getAnalyticsInstance(AnalyticsPlatforms.META)
-
-    // Track purchase event
-    ga?.processAnalyticsEvent({
+    getAnalyticsInstance(AnalyticsPlatforms.GA)?.processAnalyticsEvent({
       eventName: 'purchase',
-      eventParams: {
-        transaction_id: 'T_12345',
-        value: 299.99,
-        currency: 'USD',
-        items: [{
-          item_id: 'SKU_12345',
-          item_name: 'Product Name',
-          price: 299.99
-        }]
-      }
+      eventParams: { transaction_id: 'T_12345', value: 299.99, currency: 'USD' },
     })
-
-    meta?.processAnalyticsEvent({
+    getAnalyticsInstance(AnalyticsPlatforms.META)?.processAnalyticsEvent({
       eventName: 'Purchase',
-      eventParams: {
-        value: 299.99,
-        currency: 'USD'
-      }
+      eventParams: { value: 299.99, currency: 'USD' },
     })
   }
 
-  return <YourApp />
+  return <button onClick={handlePurchase}>Buy</button>
 }
 ```
+
+---
+
+## ⚖️ Compared with the `analytics` npm package
+
+[`analytics`](https://github.com/DavidWells/analytics) is the closest widely used library (0.8.19 as of November 2026). Cells marked * describe `analytics` as far as its documentation shows; they haven't been tested here.
+
+| | `@jadecubes/analytics` | `analytics` |
+|---|---|---|
+| Sending an event | One call per platform, using that platform's event name | One `track()` call, sent to every enabled plugin |
+| Platforms | GA4, Meta Pixel and TikTok Pixel built in | Plugins: official ones (GA and others), community ones for Meta and TikTok* |
+| Adding a platform | Change the library | Write or install a plugin |
+| Translating one event into each platform's event and parameters | No | No: each plugin receives the same name |
+| Changing or blocking events before they're sent (consent, personal data) | No | Lifecycle hooks, and plugins can be turned off* |
+| User identity and page views | No `identify`; one page view per platform at setup, none on route changes | `identify`, `page`, `reset`* |
+| Events fired right before a page navigation | `sendAnalyticsPendingEvent` saves them and sends them on the next page | Not built in* |
+| Deduplicating with server-side events | `eventId` sent to Meta (`eventID`) and TikTok (`event_id`) | Up to each plugin* |
+| Pages that already run other properties or pixels | Sends only to the configured id (`send_to`, `trackSingle`, `ttq.instance`) | Up to each plugin* |
+| Server-side rendering | Setup does nothing on the server | Designed to run on the server too* |
+| Event typing | `eventParams: Record<string, unknown>` | Loose payload types* |
+| Size | About 2.2 kB gzipped (ES build) | Core plus each plugin |
+| Maturity | Early (0.0.x), few users | Years of use, many plugins, still maintained |
 
 ---
 
@@ -215,9 +245,9 @@ This library is published as `@jadecubes/analytics` on npm. If you're a maintain
    ls -la dist/libs/analytics/
    ```
 
-4. **Copy package.json to dist**: The package.json needs to be in the dist directory
+4. **Copy package.json and README.md to dist**: both need to be in the published directory
    ```bash
-   cp libs/analytics/package.json dist/libs/analytics/
+   cp libs/analytics/package.json README.md dist/libs/analytics/
    ```
 
 5. **Publish to npm**:
@@ -228,12 +258,12 @@ This library is published as `@jadecubes/analytics` on npm. If you're a maintain
 
 ### Automated Publishing (Recommended)
 
-You can add a publish script to your root `package.json`:
+The root `package.json` already has a publish script:
 
 ```json
 {
   "scripts": {
-    "publish:analytics": "pnpm build && cp libs/analytics/package.json dist/libs/analytics/ && cd dist/libs/analytics && npm publish --access public"
+    "publish:analytics": "pnpm build && cp libs/analytics/package.json README.md dist/libs/analytics/ && cd dist/libs/analytics && npm publish --access public"
   }
 }
 ```
@@ -265,7 +295,7 @@ Analytics/
 │   └── analytics/          # Main analytics library
 │       ├── src/
 │       │   ├── core/       # Core analytics implementations
-│       │   ├── react/      # React-specific providers
+│       │   ├── createAnalyticsProviders.ts  # Set up platforms, get instances
 │       │   └── types/      # TypeScript types
 │       └── vite.config.ts  # Vite build configuration
 └── tools/                  # Build and development tools

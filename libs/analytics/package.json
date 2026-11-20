@@ -7,9 +7,9 @@
   "types": "./index.d.ts",
   "exports": {
     ".": {
+      "types": "./index.d.ts",
       "import": "./index.mjs",
-      "require": "./index.js",
-      "types": "./index.d.ts"
+      "require": "./index.js"
     }
   },
   "files": [
@@ -26,7 +26,6 @@
     "meta-pixel",
     "tiktok-pixel",
     "tracking",
-    "react",
     "typescript"
   ],
   "author": "jadecubes",
@@ -39,8 +38,5 @@
   "bugs": {
     "url": "https://github.com/jadecubes/Analytics/issues"
   },
-  "homepage": "https://github.com/jadecubes/Analytics#readme",
-  "peerDependencies": {
-    "react": "^18.0.0"
-  }
+  "homepage": "https://github.com/jadecubes/Analytics#readme"
 }

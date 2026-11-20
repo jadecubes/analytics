@@ -1,76 +1,39 @@
-import { type BaseAnalyticsEvent } from '../types/events.ts'
-import { Analytics } from './Analytics.ts'
+import { type BaseAnalyticsEvent } from '../types/events'
+import { Analytics, AnalyticsPlatforms } from './Analytics'
+
 export interface GA4Config {
   measurementId: string
 }
-export class Ga extends Analytics<BaseAnalyticsEvent> {
-  protected measurementId: string
-  private static instance: Ga | null = null
 
+export class Ga extends Analytics {
   constructor(config: GA4Config) {
-    super()
-    this.measurementId = config.measurementId
-    this.initialize()
+    super(AnalyticsPlatforms.GA, config.measurementId)
   }
 
-  // Static getInstance method for singleton pattern
-  public static getInstance(config: GA4Config): Ga {
-    if (!Ga.instance) {
-      Ga.instance = new Ga(config)
-    }
-    return Ga.instance
-  }
-
-  protected initialize() {
-    this.setIsReady(false)
-    const head = document.querySelector('head')
-    const existingScript = document.querySelector(`script[src="https://www.googletagmanager.com/gtag/js?id=${this.measurementId}"]`)
-    // dataLayer needs to be initialized before GA script is loaded
+  protected initialize(): void {
+    const scriptSrc = `https://www.googletagmanager.com/gtag/js?id=${this.measurementId}`
     window.dataLayer = window.dataLayer || []
-    // https://developers.google.com/tag-platform/devguides/datalayer
-    function gtag() {
-      window.dataLayer?.push(arguments)
-    }
-
     if (!window.gtag) {
-      window.gtag = gtag
-      window.gtag('js', new Date())
-      window.gtag('config', this.measurementId)
-    }
-
-    // Only init script once
-    if (!existingScript) {
-      const script = document.createElement('script')
-      script.setAttribute('src', `https://www.googletagmanager.com/gtag/js?id=${this.measurementId}`)
-      script.async = true
-      script.onload = () => {
-        this.setIsReady(true)
+      // gtag.js only reads `arguments` objects from dataLayer, not arrays
+      window.gtag = function gtag() {
+        window.dataLayer?.push(arguments)
       }
-      head?.appendChild(script)
+      window.gtag('js', new Date())
     }
-    else {
-      this.setIsReady(true)
+    if (!document.querySelector(`script[src="${scriptSrc}"]`)) {
+      window.gtag('config', this.measurementId)
+      const script = document.createElement('script')
+      script.src = scriptSrc
+      script.async = true
+      document.head.appendChild(script)
     }
   }
 
-  protected sendAnalyticsEvent(customEvent: BaseAnalyticsEvent): number {
-    const { eventName, eventParams } = customEvent
-
-    const gtagEvent = ['event', eventName, eventParams]
-
-    if (window.gtag) {
-      try {
-        window.gtag(...gtagEvent)
-        return 0
-      }
-      catch (error) {
-        console.error('[GA] sendEvent', error)
-        return -1
-      }
+  protected sendAnalyticsEvent({ eventName, eventParams }: BaseAnalyticsEvent): void {
+    if (!window.gtag) {
+      console.error(`[${this.platform}] gtag is not defined`)
+      return
     }
-    else {
-      console.error('[GA] gtag is not defined')
-      return -1
-    }
+    window.gtag('event', eventName, { ...eventParams, send_to: this.measurementId })
   }
 }

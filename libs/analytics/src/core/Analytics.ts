@@ -1,52 +1,76 @@
 import { type BaseAnalyticsEvent } from '../types/events'
-export const TIME_WAIT_FOR_READY_PLATFORM = 500
+
+export const PENDING_EVENTS_KEY_PREFIX = '@jadecubes/analytics:pending:'
+
 export enum AnalyticsPlatforms {
   GA = 'GA',
   META = 'META',
   TIKTOK = 'TIKTOK',
 }
 
-export abstract class Analytics<T extends BaseAnalyticsEvent> {
-  private _isReady: boolean
-  private _eventQueue: T[]
+const isStoredEvent = (item: unknown): item is BaseAnalyticsEvent =>
+  typeof item === 'object' && item !== null && typeof (item as { eventName?: unknown }).eventName === 'string'
 
-  constructor() {
-    this._eventQueue = []
-    this._isReady = false
+export abstract class Analytics {
+  constructor(
+    protected readonly platform: AnalyticsPlatforms,
+    public readonly measurementId: string,
+  ) {
+    try {
+      this.initialize()
+    }
+    catch (error) {
+      console.error(`[${this.platform}] initialize`, error)
+    }
+    this.replayPendingEvents()
   }
 
   protected abstract initialize(): void
-  protected abstract sendAnalyticsEvent(customEvent: T): void
+  protected abstract sendAnalyticsEvent(customEvent: BaseAnalyticsEvent): void
 
-  protected writeEventsToPlatform(): void {
-    if (!this._isReady) {
-      window.setTimeout(() => this.writeEventsToPlatform(), TIME_WAIT_FOR_READY_PLATFORM)
+  public processAnalyticsEvent(customEvent: BaseAnalyticsEvent): void {
+    try {
+      this.sendAnalyticsEvent(customEvent)
+    }
+    catch (error) {
+      console.error(`[${this.platform}] sendEvent`, error)
+    }
+  }
+
+  /** Sends the event on the next page instead of now, so a full-page navigation can't lose it. */
+  public sendAnalyticsPendingEvent(customEvent: BaseAnalyticsEvent): void {
+    try {
+      window.sessionStorage.setItem(this.pendingStorageKey, JSON.stringify([...this.readPendingEvents(), customEvent]))
+    }
+    catch {
+      this.processAnalyticsEvent(customEvent)
+    }
+  }
+
+  private replayPendingEvents(): void {
+    let pendingEvents: BaseAnalyticsEvent[]
+    try {
+      pendingEvents = this.readPendingEvents()
+      window.sessionStorage.removeItem(this.pendingStorageKey)
+    }
+    catch {
       return
     }
-    this._eventQueue.forEach((event) => {
-      this.sendAnalyticsEvent(event)
-    })
-    this._eventQueue = []
+    pendingEvents.forEach(event => this.processAnalyticsEvent(event))
   }
 
-  public get isReady(): boolean {
-    return this._isReady
+  private get pendingStorageKey(): string {
+    return `${PENDING_EVENTS_KEY_PREFIX}${this.platform}:${this.measurementId}`
   }
 
-  public get eventQueue(): T[] {
-    return [...this._eventQueue]
-  }
-
-  protected setIsReady(value: boolean): void {
-    this._isReady = value
-  }
-
-  public processAnalyticsEvent(customEvent: T): void {
-    this.addToEventQueue(customEvent)
-    this.writeEventsToPlatform()
-  }
-
-  protected addToEventQueue(customEvent: T): void {
-    this._eventQueue.push(customEvent)
+  private readPendingEvents(): BaseAnalyticsEvent[] {
+    const saved = window.sessionStorage.getItem(this.pendingStorageKey)
+    try {
+      const parsed: unknown = JSON.parse(saved ?? '[]')
+      return Array.isArray(parsed) ? parsed.filter(isStoredEvent) : []
+    }
+    catch {
+      return []
+    }
   }
 }

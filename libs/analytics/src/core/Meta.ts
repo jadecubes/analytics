@@ -1,37 +1,27 @@
-import { type BaseAnalyticsEvent } from '../types/events.ts'
-import { Analytics } from './Analytics.ts'
+import { type BaseAnalyticsEvent } from '../types/events'
+import { Analytics, AnalyticsPlatforms } from './Analytics'
+
+const STANDARD_EVENTS = new Set([
+  'AddPaymentInfo', 'AddToCart', 'AddToWishlist', 'CompleteRegistration', 'Contact',
+  'CustomizeProduct', 'Donate', 'FindLocation', 'InitiateCheckout', 'Lead', 'PageView',
+  'Purchase', 'Schedule', 'Search', 'StartTrial', 'SubmitApplication', 'Subscribe', 'ViewContent',
+])
 
 export interface MetaPixelConfig {
   measurementId: string
-  userId?: string | null
 }
 
-export class Meta extends Analytics<BaseAnalyticsEvent> {
-  protected measurementId: string
-  private static instance: Meta | null = null
-
+export class Meta extends Analytics {
   constructor(config: MetaPixelConfig) {
-    super()
-    this.measurementId = config.measurementId
-    this.initialize()
-  }
-
-  // Static getInstance method for singleton pattern
-  public static getInstance(config: MetaPixelConfig): Meta {
-    if (!Meta.instance) {
-      Meta.instance = new Meta(config)
-    }
-    return Meta.instance
+    super(AnalyticsPlatforms.META, config.measurementId)
   }
 
   protected initialize(): void {
-    this.setIsReady(false)
-    const head = document.querySelector('head')
-    const existingScript = document.querySelector('script[src*="connect.facebook.net/en_US/fbevents.js"]')
-    // https://www.facebook.com/help/1604282442927573
-    if (!existingScript) {
-      const script = document.createElement('script')
-      script.textContent = `
+    const snippetId = `meta-pixel-${this.measurementId}`
+    if (document.querySelector(`script[data-id="${snippetId}"]`)) return
+    const script = document.createElement('script')
+    script.setAttribute('data-id', snippetId)
+    script.textContent = `
       !function(f,b,e,v,n,t,s)
       {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
       n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -40,33 +30,23 @@ export class Meta extends Analytics<BaseAnalyticsEvent> {
       t.src=v;s=b.getElementsByTagName(e)[0];
       s.parentNode.insertBefore(t,s)}(window,document,'script',
       'https://connect.facebook.net/en_US/fbevents.js');
-      fbq('init', '${this.measurementId}');
-      fbq('track', 'PageView');
-      `
-      script.onload = () => {
-        this.setIsReady(true)
-      }
-      head?.appendChild(script)
-    }
-    else { this.setIsReady(true) }
+    `
+    document.head.appendChild(script)
+    window.fbq?.('init', this.measurementId)
+    window.fbq?.('trackSingle', this.measurementId, 'PageView')
   }
 
-  protected sendAnalyticsEvent(customEvent: BaseAnalyticsEvent): number {
-    const { eventName, eventParams } = customEvent
-    const fbqEvent = ['event', eventName, eventParams]
-    if (window.fbq) {
-      try {
-        window.fbq(...fbqEvent)
-        return 0
-      }
-      catch (error) {
-        console.error('[META] sendEvent', error)
-        return -1
-      }
+  protected sendAnalyticsEvent({ eventName, eventParams, eventId }: BaseAnalyticsEvent): void {
+    if (!window.fbq) {
+      console.error(`[${this.platform}] fbq is not defined`)
+      return
+    }
+    const command = STANDARD_EVENTS.has(eventName) ? 'trackSingle' : 'trackSingleCustom'
+    if (eventId) {
+      window.fbq(command, this.measurementId, eventName, eventParams, { eventID: eventId })
     }
     else {
-      console.error('[META] fbq is not defined')
-      return -1
+      window.fbq(command, this.measurementId, eventName, eventParams)
     }
   }
 }

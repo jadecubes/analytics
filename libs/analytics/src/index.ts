@@ -1,2 +1,7 @@
-export * from './react/createAnalyticsProviders'
+export * from './createAnalyticsProviders'
 export { AnalyticsPlatforms } from './core/Analytics'
+export type { Analytics } from './core/Analytics'
+export type { GA4Config } from './core/Ga'
+export type { MetaPixelConfig } from './core/Meta'
+export type { TikTokPixelConfig } from './core/Tiktok'
+export type { BaseAnalyticsEvent } from './types/events'
