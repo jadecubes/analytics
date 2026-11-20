@@ -125,7 +125,7 @@ tiktok?.processAnalyticsEvent({
 
 The `processAnalyticsEvent` method:
 - Hands the event to the platform straight away. Until the platform's script loads, its own stub (`gtag`, `fbq`, `ttq`) holds the event, so you can call it right after initialization
-- Sends each event only to the configured property or pixel, not to others the page may also run: GA4 with `send_to`, Meta with `fbq('trackSingle')` (or `trackSingleCustom` for names outside Meta's [standard events](https://developers.facebook.com/docs/meta-pixel/reference#standard-events)), TikTok with `ttq.instance(id)`
+- Sends each event only to the configured property or pixel, not to others the page may also run: GA4 with `send_to`, Meta with `fbq('trackSingle')` (or `trackSingleCustom` for names outside Meta's [standard events](https://developers.facebook.com/docs/meta-pixel/reference#standard-events)), TikTok with `ttq.instance(id)`. Untargeted calls the page makes itself, such as a global `ttq.track(...)`, still reach every pixel, including ours
 - Passes `eventId`, if you set one, to Meta (`eventID`) and TikTok (`event_id`) so they can deduplicate it against server-side events
 
 ### Events Right Before a Page Navigation
@@ -245,9 +245,9 @@ This library is published as `@jadecubes/analytics` on npm. If you're a maintain
    ls -la dist/libs/analytics/
    ```
 
-4. **Copy package.json and README.md to dist**: both need to be in the published directory
+4. **Copy package.json, README.md and LICENSE to dist**: all three need to be in the published directory
    ```bash
-   cp libs/analytics/package.json README.md dist/libs/analytics/
+   cp libs/analytics/package.json README.md LICENSE dist/libs/analytics/
    ```
 
 5. **Publish to npm**:
@@ -263,7 +263,7 @@ The root `package.json` already has a publish script:
 ```json
 {
   "scripts": {
-    "publish:analytics": "pnpm build && cp libs/analytics/package.json README.md dist/libs/analytics/ && cd dist/libs/analytics && npm publish --access public"
+    "publish:analytics": "pnpm build && cp libs/analytics/package.json README.md LICENSE dist/libs/analytics/ && cd dist/libs/analytics && npm publish --access public"
   }
 }
 ```

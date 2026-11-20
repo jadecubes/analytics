@@ -70,4 +70,14 @@ describe('TikTok', () => {
     expect(instance).toHaveBeenCalledWith(measurementId)
     expect(pixel.page).toHaveBeenCalled()
   })
+
+  it('leaves its pixel alone when the page\'s ttq has already loaded it', () => {
+    const { load, pixel } = mockTtq()
+    window.ttq = { ...window.ttq!, _i: { [measurementId]: [] } }
+
+    new TikTok({ measurementId })
+
+    expect(load).not.toHaveBeenCalled()
+    expect(pixel.page).not.toHaveBeenCalled()
+  })
 })

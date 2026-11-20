@@ -10,7 +10,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0 --ignore-pattern 'eslint.config.mjs'",
-    "publish:analytics": "pnpm build && cp libs/analytics/package.json README.md dist/libs/analytics/ && cd dist/libs/analytics && npm publish --access public"
+    "publish:analytics": "pnpm build && cp libs/analytics/package.json README.md LICENSE dist/libs/analytics/ && cd dist/libs/analytics && npm publish --access public"
   },
   "devDependencies": {
     "@stylistic/eslint-plugin": "^2.9.0",
