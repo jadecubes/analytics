@@ -2,6 +2,10 @@
 
 ## Development
 
+### Setup
+
+Clone the repository, then run `pnpm install`. Only pnpm works (the `preinstall` script blocks npm and yarn), and installing also sets up the pre-push hook.
+
 ### Project Structure
 
 ```

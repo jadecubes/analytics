@@ -125,7 +125,7 @@ export function PurchaseButton() {
 
 | Export | What it does |
 |---|---|
-| `createAnalyticsProviders(config: AnalyticsConfig): void` | Sets up each platform in `config` once. Skips platforms with an empty id, warns if a platform is set up again with another id, and does nothing without `window`. |
+| `createAnalyticsProviders(config: AnalyticsConfig): void` | Sets up each platform in `config` once. Skips platforms with an empty id, keeps the first instance and warns if a platform is set up again with another id, and does nothing without `window`. |
 | `getAnalyticsInstance(platform: AnalyticsPlatforms): Analytics \| undefined` | Returns the platform set up by `createAnalyticsProviders`, or `undefined` if it wasn't. |
 | `instance.processAnalyticsEvent(event: BaseAnalyticsEvent): void` | Sends the event to this platform now. Errors are logged, never thrown. |
 | `instance.sendAnalyticsPendingEvent(event: BaseAnalyticsEvent): void` | Saves the event and sends it when this platform and id are next set up. Sends it now if `sessionStorage` is unavailable. |
@@ -138,8 +138,8 @@ export function PurchaseButton() {
 ## ⚠️ Limitations
 
 - **One call per platform.** There is no single event that is translated into each platform's event name and parameters.
-- **No consent handling.** Scripts load as soon as you call `createAnalyticsProviders`; call it only once the user has agreed to tracking.
-- **Page views only at setup.** Each platform records one page view when it is set up, none on route changes in a single-page app.
+- **No consent handling.** Scripts load as soon as you call `createAnalyticsProviders`; with a consent banner, call it only once the user agrees. Events sent before then are dropped, because `getAnalyticsInstance` returns `undefined`.
+- **Page views only at setup.** The library sends one page view per platform when it is set up and none on route changes in a single-page app. GA4's enhanced measurement and the Meta Pixel may record history changes on their own, so check before sending your own route-change page views.
 - **No user identity.** There is no `identify` call.
 
 ---
@@ -155,7 +155,7 @@ export function PurchaseButton() {
 | Adding a platform | Change the library | Write or install a plugin |
 | Translating one event into each platform's event and parameters | No | No: each plugin receives the same name |
 | Changing or blocking events before they're sent (consent, personal data) | No | Lifecycle hooks, and plugins can be turned off* |
-| User identity and page views | No `identify`; one page view per platform at setup, none on route changes | `identify`, `page`, `reset`* |
+| User identity and page views | No `identify`; the library sends one page view per platform at setup, none on route changes | `identify`, `page`, `reset`* |
 | Events fired right before a page navigation | `sendAnalyticsPendingEvent` saves them and sends them on the next page | Not built in* |
 | Deduplicating with server-side events | `eventId` sent to Meta (`eventID`) and TikTok (`event_id`) | Up to each plugin* |
 | Pages that already run other properties or pixels | Sends only to the configured id (`send_to`, `trackSingle`, `ttq.instance`) | Up to each plugin* |
