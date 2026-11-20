@@ -1,17 +1,12 @@
 /**
- * https://developers.facebook.com/docs/meta-pixel/reference/#reference, e.g. fbq('track', eventName, eventParams);
- * https://developers.google.com/analytics/devguides/collection/ga4/events?client_type=gtag&sjid=8862249207170699049-AP, e.g. gtag('event', eventName, eventParams);
- * https://ads.tiktok.com/help/article/standard-events-parameters?lang=en, e.g. ttq.track(eventName, eventParams);
- *
- * Event list,
- * https://developers.google.com/analytics/devguides/collection/ga4/reference/events?client_type=gtm#add_to_cart
+ * Event names and parameters are each platform's own:
+ * GA4 https://developers.google.com/analytics/devguides/collection/ga4/reference/events,
+ * Meta https://developers.facebook.com/docs/meta-pixel/reference#standard-events,
+ * TikTok https://ads.tiktok.com/help/article/standard-events-parameters
  */
 export interface BaseAnalyticsEvent {
   eventName: string
   eventParams: Record<string, unknown>
-  /**
-   * Unique ID for deduplicating with server-side events. Sent to Meta as `eventID` and to
-   * TikTok as `event_id`; GA4 has no equivalent, so Ga ignores it.
-   */
+  /** Sent to Meta as `eventID` and TikTok as `event_id` to deduplicate with server-side events; GA4 has no equivalent. */
   eventId?: string
 }

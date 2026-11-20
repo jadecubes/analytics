@@ -88,10 +88,4 @@ export default defineConfig([
       'eqeqeq': ['error', 'smart'],
     },
   },
-  {
-    files: ['**/*.spec.ts', '**/*.spec.tsx', '**/*.spec.js', '**/*.spec.jsx'],
-    languageOptions: {
-      globals: { ...globals.jest },
-    },
-  },
 ])

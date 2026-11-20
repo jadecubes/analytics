@@ -22,7 +22,6 @@ const warnIfReconfigured = (platform: AnalyticsPlatforms, existing: { measuremen
 }
 
 export const createAnalyticsProviders = (config: AnalyticsConfig) => {
-  // Server-side rendering has no window; the call on the client sets everything up
   if (typeof window === 'undefined') return
 
   const gaConfig = config[AnalyticsPlatforms.GA]

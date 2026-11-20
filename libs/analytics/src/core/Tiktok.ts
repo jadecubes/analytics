@@ -4,20 +4,18 @@ import { Analytics, AnalyticsPlatforms } from './Analytics'
 export interface TikTokPixelConfig {
   measurementId: string
 }
-export class TikTok extends Analytics<BaseAnalyticsEvent> {
+
+export class TikTok extends Analytics {
   constructor(config: TikTokPixelConfig) {
     super(AnalyticsPlatforms.TIKTOK, config.measurementId)
   }
 
   protected initialize(): void {
-    const head = document.querySelector('head')
-    const existingScript = document.querySelector(`script[data-id="tiktok-pixel-${this.measurementId}"]`)
-
-    // Inject the snippet only once per pixel id
-    if (!existingScript) {
-      const script = document.createElement('script')
-      script.setAttribute('data-id', `tiktok-pixel-${this.measurementId}`)
-      script.textContent = `
+    const snippetId = `tiktok-pixel-${this.measurementId}`
+    if (document.querySelector(`script[data-id="${snippetId}"]`)) return
+    const script = document.createElement('script')
+    script.setAttribute('data-id', snippetId)
+    script.textContent = `
       !function (w, d, t) {
         w.TiktokAnalyticsObject = t;
         var ttq = w[t] = w[t] || [];
@@ -44,20 +42,21 @@ export class TikTok extends Analytics<BaseAnalyticsEvent> {
         ttq.page();
       }(window, document, 'ttq');
       `
-      head?.appendChild(script)
-    }
+    document.head.appendChild(script)
   }
 
   protected sendAnalyticsEvent({ eventName, eventParams, eventId }: BaseAnalyticsEvent): void {
     if (!window.ttq) {
-      console.error('[TT] ttq is not defined')
+      console.error(`[${this.platform}] ttq is not defined`)
       return
     }
+    // instance(id) reaches only our pixel, not other pixels on the page
+    const pixel = window.ttq.instance(this.measurementId)
     if (eventId) {
-      window.ttq.track?.(eventName, eventParams, { event_id: eventId })
+      pixel.track(eventName, eventParams, { event_id: eventId })
     }
     else {
-      window.ttq.track?.(eventName, eventParams)
+      pixel.track(eventName, eventParams)
     }
   }
 }

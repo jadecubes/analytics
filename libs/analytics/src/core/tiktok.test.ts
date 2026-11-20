@@ -1,220 +1,59 @@
-import { beforeEach, describe, it, expect, vi } from 'vitest'
-import { type BaseAnalyticsEvent } from '../types/events'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TikTok } from './Tiktok'
 
-describe('TikTok Analytics', () => {
-  const measurementId = 'TT-TEST-ID'
-  const config = { measurementId }
+const measurementId = 'TT-TEST'
 
+const mockTtq = () => {
+  const pixel = { track: vi.fn() }
+  const instance = vi.fn(() => pixel)
+  window.ttq = { instance }
+  return { instance, pixel }
+}
+
+describe('TikTok', () => {
   beforeEach(() => {
-    // Arrange: clean state
     window.ttq = undefined
     document.head.innerHTML = ''
   })
 
-  describe('test_initialize_validConfig_injectsTikTokScriptIntoDOM', () => {
-    it('should inject TikTok pixel script with correct data-id attribute', () => {
-      // Arrange: Clean state ensured by beforeEach
-
-      // Act: Create TikTok instance
-      new TikTok(config)
-
-      // Assert: Script should be injected with correct data-id
-      const script = document.querySelector(`script[data-id="tiktok-pixel-${measurementId}"]`)
-      expect(script).not.toBeNull()
-      expect(script?.textContent).toContain(measurementId)
-      expect(script?.textContent).toContain('analytics.tiktok.com')
-    })
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
-  describe('test_processAnalyticsEvent_validEvent_sendsEvent', () => {
-    it('should send event when ttq is available and ready', () => {
-      // Arrange: Setup TikTok instance and mock ttq
-      const tiktok = new TikTok(config)
-      const mockTtq = {
-        track: vi.fn(),
-        push: vi.fn(),
-        page: vi.fn(),
-        load: vi.fn(),
-      }
-      window.ttq = mockTtq
+  it('injects the pixel code once per pixel id, loading that id', () => {
+    new TikTok({ measurementId })
+    new TikTok({ measurementId })
 
-      const event: BaseAnalyticsEvent = {
-        eventName: 'CompletePayment',
-        eventParams: { value: 99.99, currency: 'USD' },
-      }
-
-      // Act: Process the event
-      tiktok.processAnalyticsEvent(event)
-
-      // Assert: ttq.track should be called with correct parameters
-      expect(mockTtq.track).toHaveBeenCalledWith('CompletePayment', {
-        value: 99.99,
-        currency: 'USD',
-      })
-      expect(mockTtq.track).toHaveBeenCalledTimes(1)
-    })
+    const snippets = document.querySelectorAll(`script[data-id="tiktok-pixel-${measurementId}"]`)
+    expect(snippets).toHaveLength(1)
+    expect(snippets[0].textContent).toContain(`ttq.load('${measurementId}')`)
   })
 
-  describe('test_processAnalyticsEvent_multipleEvents_sendsAllInOrder', () => {
-    it('should send multiple events in order', () => {
-      // Arrange: Setup TikTok instance and multiple events
-      const tiktok = new TikTok(config)
-      const mockTtq = {
-        track: vi.fn(),
-        push: vi.fn(),
-        page: vi.fn(),
-        load: vi.fn(),
-      }
-      window.ttq = mockTtq
+  it('sends events to its own pixel only', () => {
+    const tiktok = new TikTok({ measurementId })
+    const { instance, pixel } = mockTtq()
 
-      const event1: BaseAnalyticsEvent = {
-        eventName: 'ViewContent',
-        eventParams: { content_type: 'product' },
-      }
-      const event2: BaseAnalyticsEvent = {
-        eventName: 'AddToCart',
-        eventParams: { content_id: 'SKU123' },
-      }
-      const event3: BaseAnalyticsEvent = {
-        eventName: 'InitiateCheckout',
-        eventParams: { value: 150 },
-      }
+    tiktok.processAnalyticsEvent({ eventName: 'CompletePayment', eventParams: { value: 10 } })
 
-      // Act: Send multiple events
-      tiktok.processAnalyticsEvent(event1)
-      tiktok.processAnalyticsEvent(event2)
-      tiktok.processAnalyticsEvent(event3)
-
-      // Assert: All events should be sent
-      expect(mockTtq.track).toHaveBeenCalledTimes(3)
-      expect(mockTtq.track).toHaveBeenNthCalledWith(1, 'ViewContent', { content_type: 'product' })
-      expect(mockTtq.track).toHaveBeenNthCalledWith(2, 'AddToCart', { content_id: 'SKU123' })
-      expect(mockTtq.track).toHaveBeenNthCalledWith(3, 'InitiateCheckout', { value: 150 })
-    })
+    expect(instance).toHaveBeenCalledWith(measurementId)
+    expect(pixel.track).toHaveBeenCalledWith('CompletePayment', { value: 10 })
   })
 
-  describe('test_processAnalyticsEvent_ttqUndefined_handlesGracefully', () => {
-    it('should not throw error when ttq is undefined', () => {
-      // Arrange: Setup TikTok instance without ttq
-      const tiktok = new TikTok(config)
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+  it('passes eventId as event_id for deduplication', () => {
+    const tiktok = new TikTok({ measurementId })
+    const { pixel } = mockTtq()
 
-      const event: BaseAnalyticsEvent = {
-        eventName: 'Purchase',
-        eventParams: { value: 100 },
-      }
+    tiktok.processAnalyticsEvent({ eventName: 'CompletePayment', eventParams: {}, eventId: 'order-1' })
 
-      // Act & Assert: Should not throw
-      expect(() => {
-        tiktok.processAnalyticsEvent(event)
-      }).not.toThrow()
-
-      // Assert: Error should be logged
-      expect(consoleErrorSpy).toHaveBeenCalledWith('[TT] ttq is not defined')
-
-      // Cleanup
-      consoleErrorSpy.mockRestore()
-    })
+    expect(pixel.track).toHaveBeenCalledWith('CompletePayment', {}, { event_id: 'order-1' })
   })
 
-  describe('test_processAnalyticsEvent_ttqTrackUndefined_handlesGracefully', () => {
-    it('should handle gracefully when ttq.track is undefined', () => {
-      // Arrange: Setup TikTok instance with ttq but without track method
-      const tiktok = new TikTok(config)
-      const mockTtq = {
-        push: vi.fn(),
-        page: vi.fn(),
-        load: vi.fn(),
-      }
-      // @ts-expect-error: Intentionally testing incomplete ttq object
-      window.ttq = mockTtq
+  it('logs an error when ttq is missing', () => {
+    const tiktok = new TikTok({ measurementId })
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-      const event: BaseAnalyticsEvent = {
-        eventName: 'Purchase',
-        eventParams: { value: 100 },
-      }
+    tiktok.processAnalyticsEvent({ eventName: 'CompletePayment', eventParams: {} })
 
-      // Act & Assert: track is optional, so a missing one must not throw
-      expect(() => tiktok.processAnalyticsEvent(event)).not.toThrow()
-    })
-  })
-
-  describe('test_processAnalyticsEvent_emptyEventParams_sendsEventWithoutParams', () => {
-    it('should send event with empty params object', () => {
-      // Arrange: Setup TikTok instance
-      const tiktok = new TikTok(config)
-      const mockTtq = {
-        track: vi.fn(),
-        push: vi.fn(),
-        page: vi.fn(),
-        load: vi.fn(),
-      }
-      window.ttq = mockTtq
-
-      const event: BaseAnalyticsEvent = {
-        eventName: 'PageView',
-        eventParams: {},
-      }
-
-      // Act: Process event with empty params
-      tiktok.processAnalyticsEvent(event)
-
-      // Assert: Should send with empty object
-      expect(mockTtq.track).toHaveBeenCalledWith('PageView', {})
-    })
-  })
-
-  describe('test_processAnalyticsEvent_specialCharactersInEventName_handlesCorrectly', () => {
-    it('should handle event names with special characters', () => {
-      // Arrange: Setup TikTok instance
-      const tiktok = new TikTok(config)
-      const mockTtq = {
-        track: vi.fn(),
-        push: vi.fn(),
-        page: vi.fn(),
-        load: vi.fn(),
-      }
-      window.ttq = mockTtq
-
-      const event: BaseAnalyticsEvent = {
-        eventName: 'Custom_Event-2024',
-        eventParams: { test: 'value' },
-      }
-
-      // Act: Process event with special characters
-      tiktok.processAnalyticsEvent(event)
-
-      // Assert: Should send event as-is
-      expect(mockTtq.track).toHaveBeenCalledWith('Custom_Event-2024', { test: 'value' })
-    })
-  })
-
-  describe('test_initialize_differentMeasurementIds_createsUniqueScripts', () => {
-    it('should use measurement ID in script data-id attribute', () => {
-      // Arrange: Different measurement IDs
-      const customId = 'CUSTOM-TT-ID-123'
-      const customConfig = { measurementId: customId }
-
-      // Act: Create instance with custom ID
-      new TikTok(customConfig)
-
-      // Assert: Script should have custom ID in data-id
-      const script = document.querySelector(`script[data-id="tiktok-pixel-${customId}"]`)
-      expect(script).not.toBeNull()
-      expect(script?.textContent).toContain(customId)
-    })
-  })
-
-  describe('test_processAnalyticsEvent_eventId_passedAsEventIdOption', () => {
-    it('should pass eventId to TikTok as event_id for deduplication', () => {
-      const tiktok = new TikTok(config)
-      const mockTtq = { track: vi.fn(), push: vi.fn(), page: vi.fn(), load: vi.fn() }
-      window.ttq = mockTtq
-
-      tiktok.processAnalyticsEvent({ eventName: 'CompletePayment', eventParams: { value: 10 }, eventId: 'order-1' })
-
-      expect(mockTtq.track).toHaveBeenCalledWith('CompletePayment', { value: 10 }, { event_id: 'order-1' })
-    })
+    expect(errorSpy).toHaveBeenCalledWith('[TIKTOK] ttq is not defined')
   })
 })

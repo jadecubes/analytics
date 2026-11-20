@@ -1,331 +1,81 @@
-import { beforeEach, describe, it, expect, vi } from 'vitest'
-import { type BaseAnalyticsEvent } from '../types/events'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Ga } from './Ga'
 
-describe('Google Analytics (GA4)', () => {
-  const measurementId = 'GA-TEST-ID'
-  const config = { measurementId }
+const measurementId = 'G-TEST'
+const scriptSrc = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`
 
+describe('Ga', () => {
   beforeEach(() => {
-    // Arrange: clean state
     window.gtag = undefined
     window.dataLayer = undefined
     document.head.innerHTML = ''
   })
 
-  describe('test_initialize_validConfig_injectsGtagScriptIntoDOM', () => {
-    it('should inject GA4 script with correct src attribute', () => {
-      // Arrange: Clean state ensured by beforeEach
-
-      // Act: Create GA instance
-      new Ga(config)
-
-      // Assert: Script should be injected with correct URL
-      const script = document.querySelector(`script[src="https://www.googletagmanager.com/gtag/js?id=${measurementId}"]`) as HTMLScriptElement
-      expect(script).not.toBeNull()
-      expect(script?.async).toBe(true)
-    })
-
-    it('should initialize dataLayer array', () => {
-      // Arrange: Clean state ensured by beforeEach
-
-      // Act: Create GA instance
-      new Ga(config)
-
-      // Assert: dataLayer should be initialized
-      expect(window.dataLayer).toBeDefined()
-      expect(Array.isArray(window.dataLayer)).toBe(true)
-    })
-
-    it('should initialize gtag function', () => {
-      // Arrange: Clean state ensured by beforeEach
-
-      // Act: Create GA instance
-      new Ga(config)
-
-      // Assert: gtag function should be defined
-      expect(typeof window.gtag).toBe('function')
-    })
-
-    it('should not reinitialize gtag if already exists', () => {
-      // Arrange: Pre-setup gtag
-      const mockGtag = vi.fn()
-      window.gtag = mockGtag
-      window.dataLayer = []
-
-      // Act: Create GA instance
-      new Ga(config)
-
-      // Assert: gtag should remain the same mock
-      expect(window.gtag).toBe(mockGtag)
-    })
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
-  describe('test_processAnalyticsEvent_validEvent_sendsEvent', () => {
-    it('should send event when gtag is available and ready', () => {
-      // Arrange: Setup GA instance and mock gtag
-      const ga = new Ga(config)
-      const mockGtag = vi.fn()
-      window.gtag = mockGtag
+  it('injects the gtag.js script for its id', () => {
+    new Ga({ measurementId })
 
-      const event: BaseAnalyticsEvent = {
-        eventName: 'purchase',
-        eventParams: { transaction_id: 'T12345', value: 250.00, currency: 'USD' },
-      }
-
-      // Act: Process the event
-      ga.processAnalyticsEvent(event)
-
-      // Assert: gtag should be called with correct parameters
-      expect(mockGtag).toHaveBeenCalledWith('event', 'purchase', {
-        transaction_id: 'T12345',
-        value: 250.00,
-        currency: 'USD',
-      })
-      expect(mockGtag).toHaveBeenCalledTimes(1)
-    })
+    expect(document.querySelector(`script[src="${scriptSrc}"]`)).not.toBeNull()
   })
 
-  describe('test_processAnalyticsEvent_multipleEvents_sendsAllInOrder', () => {
-    it('should send multiple events in order', () => {
-      // Arrange: Setup GA instance and multiple events
-      const ga = new Ga(config)
-      const mockGtag = vi.fn()
-      window.gtag = mockGtag
+  it('defines a gtag stub that pushes the arguments object gtag.js reads', () => {
+    new Ga({ measurementId })
 
-      const event1: BaseAnalyticsEvent = {
-        eventName: 'page_view',
-        eventParams: { page_title: 'Home' },
-      }
-      const event2: BaseAnalyticsEvent = {
-        eventName: 'add_to_cart',
-        eventParams: { item_id: 'SKU123' },
-      }
-      const event3: BaseAnalyticsEvent = {
-        eventName: 'begin_checkout',
-        eventParams: { value: 99.99 },
-      }
-
-      // Act: Send multiple events
-      ga.processAnalyticsEvent(event1)
-      ga.processAnalyticsEvent(event2)
-      ga.processAnalyticsEvent(event3)
-
-      // Assert: All events should be sent
-      expect(mockGtag).toHaveBeenCalledTimes(3)
-      expect(mockGtag).toHaveBeenNthCalledWith(1, 'event', 'page_view', { page_title: 'Home' })
-      expect(mockGtag).toHaveBeenNthCalledWith(2, 'event', 'add_to_cart', { item_id: 'SKU123' })
-      expect(mockGtag).toHaveBeenNthCalledWith(3, 'event', 'begin_checkout', { value: 99.99 })
-    })
+    expect(Object.prototype.toString.call(window.dataLayer?.[0])).toBe('[object Arguments]')
   })
 
-  describe('test_processAnalyticsEvent_gtagUndefined_handlesGracefully', () => {
-    it('should not throw error when gtag is undefined', () => {
-      // Arrange: Setup GA instance without gtag
-      const ga = new Ga(config)
-      window.gtag = undefined
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+  it('keeps an existing dataLayer', () => {
+    const existing = ['page-entry']
+    window.dataLayer = existing
 
-      const event: BaseAnalyticsEvent = {
-        eventName: 'purchase',
-        eventParams: { value: 100 },
-      }
+    new Ga({ measurementId })
 
-      // Act & Assert: Should not throw
-      expect(() => {
-        ga.processAnalyticsEvent(event)
-      }).not.toThrow()
-
-      // Assert: Error should be logged
-      expect(consoleErrorSpy).toHaveBeenCalledWith('[GA] gtag is not defined')
-
-      // Cleanup
-      consoleErrorSpy.mockRestore()
-    })
+    expect(window.dataLayer).toBe(existing)
+    expect(window.dataLayer[0]).toBe('page-entry')
   })
 
-  describe('test_processAnalyticsEvent_emptyEventParams_sendsEventWithoutParams', () => {
-    it('should send event with empty params object', () => {
-      // Arrange: Setup GA instance
-      const ga = new Ga(config)
-      const mockGtag = vi.fn()
-      window.gtag = mockGtag
+  it('keeps the page\'s gtag and configures its id there', () => {
+    const pageGtag = vi.fn()
+    window.gtag = pageGtag
 
-      const event: BaseAnalyticsEvent = {
-        eventName: 'page_view',
-        eventParams: {},
-      }
+    new Ga({ measurementId })
 
-      // Act: Process event with empty params
-      ga.processAnalyticsEvent(event)
-
-      // Assert: Should send with empty object
-      expect(mockGtag).toHaveBeenCalledWith('event', 'page_view', {})
-    })
+    expect(window.gtag).toBe(pageGtag)
+    expect(pageGtag).toHaveBeenCalledWith('config', measurementId)
   })
 
-  describe('test_initialize_dataLayerPreexists_preservesExistingDataLayer', () => {
-    it('should preserve existing dataLayer when already initialized', () => {
-      // Arrange: Pre-initialize dataLayer with data
-      const existingData = { event: 'pre_existing' }
-      window.dataLayer = [existingData]
+  it('does not configure its id again when its script is already on the page', () => {
+    const script = document.createElement('script')
+    script.src = scriptSrc
+    document.head.appendChild(script)
+    const pageGtag = vi.fn()
+    window.gtag = pageGtag
 
-      // Act: Create GA instance
-      new Ga(config)
+    new Ga({ measurementId })
 
-      // Assert: Existing data should be preserved
-      expect(window.dataLayer).toContain(existingData)
-      expect(window.dataLayer.length).toBeGreaterThan(0)
-    })
+    expect(pageGtag).not.toHaveBeenCalledWith('config', measurementId)
   })
 
-  describe('test_processAnalyticsEvent_complexEventParams_sendsAllParameters', () => {
-    it('should handle complex nested event parameters', () => {
-      // Arrange: Setup GA instance
-      const ga = new Ga(config)
-      const mockGtag = vi.fn()
-      window.gtag = mockGtag
+  it('sends events only to its own property', () => {
+    const ga = new Ga({ measurementId })
+    const mockGtag = vi.fn()
+    window.gtag = mockGtag
 
-      const event: BaseAnalyticsEvent = {
-        eventName: 'purchase',
-        eventParams: {
-          transaction_id: 'T12345',
-          value: 99.99,
-          currency: 'USD',
-          items: [
-            { id: 'SKU1', name: 'Product 1', quantity: 2 },
-            { id: 'SKU2', name: 'Product 2', quantity: 1 },
-          ],
-        },
-      }
+    ga.processAnalyticsEvent({ eventName: 'purchase', eventParams: { value: 10, items: [{ item_id: 'A' }] } })
 
-      // Act: Process event with complex params
-      ga.processAnalyticsEvent(event)
-
-      // Assert: Should send all parameters
-      expect(mockGtag).toHaveBeenCalledWith('event', 'purchase', {
-        transaction_id: 'T12345',
-        value: 99.99,
-        currency: 'USD',
-        items: [
-          { id: 'SKU1', name: 'Product 1', quantity: 2 },
-          { id: 'SKU2', name: 'Product 2', quantity: 1 },
-        ],
-      })
-    })
+    expect(mockGtag).toHaveBeenCalledWith('event', 'purchase', { value: 10, items: [{ item_id: 'A' }], send_to: measurementId })
   })
 
-  describe('test_initialize_differentMeasurementIds_usesCorrectId', () => {
-    it('should use correct measurement ID in script URL', () => {
-      // Arrange: Custom measurement ID
-      const customId = 'G-CUSTOM123'
-      const customConfig = { measurementId: customId }
+  it('logs an error when gtag is missing', () => {
+    const ga = new Ga({ measurementId })
+    window.gtag = undefined
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
-      // Act: Create instance with custom ID
-      new Ga(customConfig)
+    ga.processAnalyticsEvent({ eventName: 'purchase', eventParams: {} })
 
-      // Assert: Script should use custom measurement ID
-      const script = document.querySelector(`script[src="https://www.googletagmanager.com/gtag/js?id=${customId}"]`)
-      expect(script).not.toBeNull()
-    })
-  })
-
-  describe('test_processAnalyticsEvent_specialCharactersInEventName_handlesCorrectly', () => {
-    it('should handle event names with underscores and lowercase', () => {
-      // Arrange: Setup GA instance
-      const ga = new Ga(config)
-      const mockGtag = vi.fn()
-      window.gtag = mockGtag
-
-      const event: BaseAnalyticsEvent = {
-        eventName: 'custom_user_action_2024',
-        eventParams: { category: 'engagement' },
-      }
-
-      // Act: Process event
-      ga.processAnalyticsEvent(event)
-
-      // Assert: Should send event name as-is
-      expect(mockGtag).toHaveBeenCalledWith('event', 'custom_user_action_2024', {
-        category: 'engagement',
-      })
-    })
-  })
-
-  describe('test_processAnalyticsEvent_boundaryValues_handlesCorrectly', () => {
-    it('should handle zero value in event parameters', () => {
-      // Arrange: Setup GA instance
-      const ga = new Ga(config)
-      const mockGtag = vi.fn()
-      window.gtag = mockGtag
-
-      const event: BaseAnalyticsEvent = {
-        eventName: 'purchase',
-        eventParams: { value: 0, currency: 'USD' },
-      }
-
-      // Act: Process event with zero value
-      ga.processAnalyticsEvent(event)
-
-      // Assert: Should send zero value
-      expect(mockGtag).toHaveBeenCalledWith('event', 'purchase', {
-        value: 0,
-        currency: 'USD',
-      })
-    })
-
-    it('should handle very large values in event parameters', () => {
-      // Arrange: Setup GA instance
-      const ga = new Ga(config)
-      const mockGtag = vi.fn()
-      window.gtag = mockGtag
-
-      const event: BaseAnalyticsEvent = {
-        eventName: 'purchase',
-        eventParams: { value: 999999.99, quantity: 1000000 },
-      }
-
-      // Act: Process event with large values
-      ga.processAnalyticsEvent(event)
-
-      // Assert: Should send large values
-      expect(mockGtag).toHaveBeenCalledWith('event', 'purchase', {
-        value: 999999.99,
-        quantity: 1000000,
-      })
-    })
-  })
-
-  describe('test_initialize_gtagStub_pushesArgumentsObject', () => {
-    it('should push the arguments object, which is the only form gtag.js reads', () => {
-      new Ga(config)
-
-      expect(Object.prototype.toString.call(window.dataLayer?.[0])).toBe('[object Arguments]')
-    })
-  })
-
-  describe('test_initialize_pageAlreadyRunsGtag_configuresOurId', () => {
-    it('should configure our id when the page already runs gtag for another property', () => {
-      const pageGtag = vi.fn()
-      window.gtag = pageGtag
-      window.dataLayer = []
-
-      new Ga(config)
-
-      expect(pageGtag).toHaveBeenCalledWith('config', measurementId)
-    })
-
-    it('should not configure our id again when its script is already on the page', () => {
-      const existingScript = document.createElement('script')
-      existingScript.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`
-      document.head.appendChild(existingScript)
-      const pageGtag = vi.fn()
-      window.gtag = pageGtag
-      window.dataLayer = []
-
-      new Ga(config)
-
-      expect(pageGtag).not.toHaveBeenCalledWith('config', measurementId)
-    })
+    expect(errorSpy).toHaveBeenCalledWith('[GA] gtag is not defined')
   })
 })

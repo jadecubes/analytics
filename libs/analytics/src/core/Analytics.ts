@@ -1,20 +1,18 @@
 import { type BaseAnalyticsEvent } from '../types/events'
+
 export const PENDING_EVENTS_KEY_PREFIX = '@jadecubes/analytics:pending:'
+
 export enum AnalyticsPlatforms {
   GA = 'GA',
   META = 'META',
   TIKTOK = 'TIKTOK',
 }
 
-/**
- * Each platform's snippet defines a stub (`gtag`, `fbq`, `ttq`) that queues calls until the
- * real script loads, so events can be handed over as soon as the snippet has run.
- */
-const isStoredEvent = (item: unknown): boolean =>
+const isStoredEvent = (item: unknown): item is BaseAnalyticsEvent =>
   typeof item === 'object' && item !== null && typeof (item as { eventName?: unknown }).eventName === 'string'
 
-export abstract class Analytics<T extends BaseAnalyticsEvent> {
-  // Set here, not by subclass fields: those are assigned only after this constructor returns
+export abstract class Analytics {
+  // Subclass fields are assigned only after this constructor returns, so the platform comes in here
   constructor(
     protected readonly platform: AnalyticsPlatforms,
     public readonly measurementId: string,
@@ -24,9 +22,9 @@ export abstract class Analytics<T extends BaseAnalyticsEvent> {
   }
 
   protected abstract initialize(): void
-  protected abstract sendAnalyticsEvent(customEvent: T): void
+  protected abstract sendAnalyticsEvent(customEvent: BaseAnalyticsEvent): void
 
-  public processAnalyticsEvent(customEvent: T): void {
+  public processAnalyticsEvent(customEvent: BaseAnalyticsEvent): void {
     try {
       this.sendAnalyticsEvent(customEvent)
     }
@@ -35,23 +33,18 @@ export abstract class Analytics<T extends BaseAnalyticsEvent> {
     }
   }
 
-  /**
-   * Saves the event and sends it on the next page load instead of now. Use it for events
-   * fired right before a full-page navigation, which the unload would otherwise lose.
-   * Falls back to sending now when sessionStorage is unavailable.
-   */
-  public sendAnalyticsPendingEvent(customEvent: T): void {
+  /** Sends the event on the next page instead of now, so a full-page navigation can't lose it. */
+  public sendAnalyticsPendingEvent(customEvent: BaseAnalyticsEvent): void {
     try {
-      const pendingEvents = this.readPendingEvents()
-      window.sessionStorage.setItem(this.pendingStorageKey, JSON.stringify([...pendingEvents, customEvent]))
+      window.sessionStorage.setItem(this.pendingStorageKey, JSON.stringify([...this.readPendingEvents(), customEvent]))
     }
     catch {
       this.processAnalyticsEvent(customEvent)
     }
   }
 
-  protected replayPendingEvents(): void {
-    let pendingEvents: T[]
+  private replayPendingEvents(): void {
+    let pendingEvents: BaseAnalyticsEvent[]
     try {
       pendingEvents = this.readPendingEvents()
       // Cleared before sending, so an interrupted replay can't send an event twice
@@ -67,11 +60,11 @@ export abstract class Analytics<T extends BaseAnalyticsEvent> {
     return `${PENDING_EVENTS_KEY_PREFIX}${this.platform}`
   }
 
-  private readPendingEvents(): T[] {
+  private readPendingEvents(): BaseAnalyticsEvent[] {
     const saved = window.sessionStorage.getItem(this.pendingStorageKey)
     try {
       const parsed: unknown = JSON.parse(saved ?? '[]')
-      return Array.isArray(parsed) ? parsed.filter(isStoredEvent) as T[] : []
+      return Array.isArray(parsed) ? parsed.filter(isStoredEvent) : []
     }
     catch {
       return []

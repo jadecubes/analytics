@@ -12,18 +12,17 @@ export interface MetaPixelConfig {
   measurementId: string
 }
 
-export class Meta extends Analytics<BaseAnalyticsEvent> {
+export class Meta extends Analytics {
   constructor(config: MetaPixelConfig) {
     super(AnalyticsPlatforms.META, config.measurementId)
   }
 
   protected initialize(): void {
-    const head = document.querySelector('head')
-    const existingScript = document.querySelector('script[src*="connect.facebook.net/en_US/fbevents.js"]')
-    // https://www.facebook.com/help/1604282442927573
-    if (!existingScript) {
-      const script = document.createElement('script')
-      script.textContent = `
+    const snippetId = `meta-pixel-${this.measurementId}`
+    if (document.querySelector(`script[data-id="${snippetId}"]`)) return
+    const script = document.createElement('script')
+    script.setAttribute('data-id', snippetId)
+    script.textContent = `
       !function(f,b,e,v,n,t,s)
       {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
       n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -32,24 +31,24 @@ export class Meta extends Analytics<BaseAnalyticsEvent> {
       t.src=v;s=b.getElementsByTagName(e)[0];
       s.parentNode.insertBefore(t,s)}(window,document,'script',
       'https://connect.facebook.net/en_US/fbevents.js');
-      fbq('init', '${this.measurementId}');
-      fbq('track', 'PageView');
-      `
-      head?.appendChild(script)
-    }
+    `
+    document.head.appendChild(script)
+    window.fbq?.('init', this.measurementId)
+    window.fbq?.('trackSingle', this.measurementId, 'PageView')
   }
 
   protected sendAnalyticsEvent({ eventName, eventParams, eventId }: BaseAnalyticsEvent): void {
     if (!window.fbq) {
-      console.error('[META] fbq is not defined')
+      console.error(`[${this.platform}] fbq is not defined`)
       return
     }
-    const command = STANDARD_EVENTS.has(eventName) ? 'track' : 'trackCustom'
+    // The Single commands reach only our pixel, not other pixels on the page
+    const command = STANDARD_EVENTS.has(eventName) ? 'trackSingle' : 'trackSingleCustom'
     if (eventId) {
-      window.fbq(command, eventName, eventParams, { eventID: eventId })
+      window.fbq(command, this.measurementId, eventName, eventParams, { eventID: eventId })
     }
     else {
-      window.fbq(command, eventName, eventParams)
+      window.fbq(command, this.measurementId, eventName, eventParams)
     }
   }
 }
