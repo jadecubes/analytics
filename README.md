@@ -189,6 +189,30 @@ export function PurchaseButton() {
 
 ---
 
+## ⚖️ Compared with the `analytics` npm package
+
+[`analytics`](https://github.com/DavidWells/analytics) is the closest widely used library (0.8.19 as of November 2026). Cells marked * describe `analytics` as far as its documentation shows; they haven't been tested here.
+
+| | `@jadecubes/analytics` | `analytics` |
+|---|---|---|
+| Sending an event | One call per platform, using that platform's event name | One `track()` call, sent to every enabled plugin |
+| Platforms | GA4, Meta Pixel and TikTok Pixel built in | Plugins: official ones (GA and others), community ones for Meta and TikTok* |
+| Adding a platform | Change the library | Write or install a plugin |
+| Translating one event into each platform's event and parameters | No | No: each plugin receives the same name |
+| Changing or blocking events before they're sent (consent, personal data) | No | Lifecycle hooks, and plugins can be turned off* |
+| User identity and page views | No `identify`; page views come from each platform's snippet | `identify`, `page`, `reset`* |
+| Events fired right before a page navigation | `sendAnalyticsPendingEvent` saves them and sends them on the next page | Not built in* |
+| Deduplicating with server-side events | `eventId` sent to Meta (`eventID`) and TikTok (`event_id`) | Up to each plugin* |
+| Pages that already run other properties or pixels | Sends only to the configured id (`send_to`, `trackSingle`, `ttq.instance`) | Up to each plugin* |
+| Server-side rendering | Setup does nothing on the server | Designed to run on the server too* |
+| Event typing | `eventParams: Record<string, unknown>` | Loose payload types* |
+| Size | About 2.2 kB gzipped (ES build) | Core plus each plugin |
+| Maturity | Early (0.0.x), few users | Years of use, many plugins, still maintained |
+
+Where this package is ahead: events before a navigation, sending only to the configured ids, and `eventId` handling, with no plugins to choose. Where `analytics` is ahead: one call for every platform, plugins, hooks for consent and personal data, and user identity.
+
+---
+
 ## 📦 Publishing to npm
 
 This library is published as `@jadecubes/analytics` on npm. If you're a maintainer, follow these steps to publish a new version:
