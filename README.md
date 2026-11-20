@@ -146,7 +146,7 @@ window.location.href = '/checkout'
 
 - Each platform keeps its own pending events, so call it on every platform that should receive the event.
 - The event is sent from the next page, so the platform records that page and time. Put anything you need from the current page in `eventParams`.
-- `sessionStorage` belongs to one tab and one site: closing the tab or navigating to another domain drops pending events.
+- `sessionStorage` is per tab and per origin (scheme, host and port). If the navigation doesn't happen or leaves the origin, the event is sent the next time this tab sets the platform up on this origin, late and attributed to that page.
 - If `sessionStorage` is unavailable, the event is sent immediately instead.
 
 ### Using It in React

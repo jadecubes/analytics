@@ -78,4 +78,16 @@ describe('Ga', () => {
 
     expect(errorSpy).toHaveBeenCalledWith('[GA] gtag is not defined')
   })
+
+  it('logs instead of throwing when gtag throws', () => {
+    const ga = new Ga({ measurementId })
+    const error = new Error('blocked')
+    window.gtag = () => {
+      throw error
+    }
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    expect(() => ga.processAnalyticsEvent({ eventName: 'purchase', eventParams: {} })).not.toThrow()
+    expect(errorSpy).toHaveBeenCalledWith('[GA] sendEvent', error)
+  })
 })

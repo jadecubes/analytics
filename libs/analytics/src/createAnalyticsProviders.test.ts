@@ -21,7 +21,7 @@ describe('createAnalyticsProviders', () => {
     expect(() => createAnalyticsProviders({ [AnalyticsPlatforms.GA]: { measurementId: 'G-SSR' } })).not.toThrow()
   })
 
-  it('returns only the platforms it set up', async () => {
+  it('getAnalyticsInstance returns only the configured platforms', async () => {
     const { createAnalyticsProviders, getAnalyticsInstance } = await loadModule()
 
     createAnalyticsProviders({ [AnalyticsPlatforms.GA]: { measurementId: 'G-APP' } })

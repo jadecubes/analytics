@@ -110,4 +110,15 @@ describe('sendAnalyticsPendingEvent', () => {
     expect(mockFbq).toHaveBeenLastCalledWith('trackSingle', metaId, 'Purchase', {})
     expect(mockFbq).toHaveBeenCalledTimes(3)
   })
+
+  it('sets the platform up even when sessionStorage is blocked', () => {
+    vi.spyOn(window, 'sessionStorage', 'get').mockImplementation(() => {
+      throw new DOMException('blocked', 'SecurityError')
+    })
+    const mockFbq = vi.fn()
+    window.fbq = mockFbq
+
+    expect(() => new Meta({ measurementId: metaId })).not.toThrow()
+    expect(mockFbq).toHaveBeenCalledWith('init', metaId)
+  })
 })
