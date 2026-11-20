@@ -60,9 +60,11 @@ describe('sendAnalyticsPendingEvent', () => {
     Meta.getInstance(metaConfig).sendAnalyticsPendingEvent({ eventName: 'Purchase', eventParams: {} })
 
     simulateNextPageLoad()
-    const ga = Ga.getInstance(gaConfig)
+    const mockGtag = vi.fn()
+    window.gtag = mockGtag
+    Ga.getInstance(gaConfig)
 
-    expect(ga.eventQueue).toEqual([])
+    expect(mockGtag).not.toHaveBeenCalledWith('event', 'Purchase', expect.anything())
     expect(window.sessionStorage.getItem(metaKey)).not.toBeNull()
   })
 

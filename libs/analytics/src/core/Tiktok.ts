@@ -27,7 +27,6 @@ export class TikTok extends Analytics<BaseAnalyticsEvent> {
   }
 
   protected initialize(): void {
-    this.setIsReady(false)
     const head = document.querySelector('head')
     const existingScript = document.querySelector(`script[data-id="tiktok-pixel-${this.measurementId}"]`)
 
@@ -63,13 +62,11 @@ export class TikTok extends Analytics<BaseAnalyticsEvent> {
         ttq.page();
       }(window, document, 'ttq');
       `
-      // Inline scripts run on append and never fire `load`; the snippet defines a queuing ttq
       head?.appendChild(script)
     }
-    this.setIsReady(true)
   }
 
-  protected sendAnalyticsEvent(customEvent: BaseAnalyticsEvent): number {
+  protected sendAnalyticsEvent(customEvent: BaseAnalyticsEvent): void {
     const { eventName, eventParams, eventId } = customEvent
     if (window.ttq) {
       try {
@@ -79,16 +76,13 @@ export class TikTok extends Analytics<BaseAnalyticsEvent> {
         else {
           window.ttq.track?.(eventName, eventParams)
         }
-        return 0
       }
       catch (error) {
         console.error('[TT] sendEvent', error)
-        return -1
       }
     }
     else {
       console.error('[TT] ttq is not defined')
-      return -1
     }
   }
 }

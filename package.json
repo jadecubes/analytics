@@ -5,40 +5,23 @@
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "prepare": "husky",
-    "dev": "vite",
     "build": "cd libs/analytics && tsc --noEmit && vite build",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0 --ignore-pattern 'eslint.config.mjs'",
-    "preview": "vite preview",
     "publish:analytics": "pnpm build && cp libs/analytics/package.json dist/libs/analytics/ && cd dist/libs/analytics && npm publish --access public"
   },
   "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "tslib": "^2.7.0",
-    "vite": "^5.4.6",
-    "vite-plugin-svgr": "^4.2.0"
+    "tslib": "^2.7.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.25.2",
-    "@babel/preset-react": "^7.24.7",
-    "@playwright/test": "^1.47.1",
-    "@stylexjs/eslint-plugin": "0.14.1",
     "@stylistic/eslint-plugin": "^2.9.0",
-    "@swc-node/register": "~1.9.2",
-    "@swc/cli": "~0.3.14",
-    "@swc/core": "~1.12.11",
-    "@swc/helpers": "~0.5.13",
-    "@testing-library/react": "16.3.0",
     "@types/node": "22.16.3",
     "@types/react": "18.3.1",
     "@types/react-dom": "18.3.0",
-    "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^8.36.0",
     "@typescript-eslint/parser": "^8.36.0",
-    "@vitejs/plugin-react": "^4.3.1",
     "@vitest/coverage-v8": "^2.1.9",
     "@vitest/ui": "^2.1.9",
     "eslint": "~9.31.0",
@@ -54,14 +37,9 @@
     "prettier": "^3.6.2",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "react-router-dom": "^6.26.2",
-    "ts-node": "10.9.1",
     "typescript": "^5.6.2",
     "vite": "^5.2.0",
-    "vite-plugin-checker": "^0.6.4",
     "vite-plugin-dts": "~4.5.4",
-    "vite-plugin-stylex": "^0.8.3",
-    "vite-plugin-svgr": "^4.2.0",
     "vitest": "^2.1.9"
   }
 }

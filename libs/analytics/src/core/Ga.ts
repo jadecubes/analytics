@@ -27,7 +27,6 @@ export class Ga extends Analytics<BaseAnalyticsEvent> {
   }
 
   protected initialize() {
-    this.setIsReady(false)
     const head = document.querySelector('head')
     const existingScript = document.querySelector(`script[src="https://www.googletagmanager.com/gtag/js?id=${this.measurementId}"]`)
     // dataLayer needs to be initialized before GA script is loaded
@@ -48,17 +47,11 @@ export class Ga extends Analytics<BaseAnalyticsEvent> {
       const script = document.createElement('script')
       script.setAttribute('src', `https://www.googletagmanager.com/gtag/js?id=${this.measurementId}`)
       script.async = true
-      script.onload = () => {
-        this.setIsReady(true)
-      }
       head?.appendChild(script)
-    }
-    else {
-      this.setIsReady(true)
     }
   }
 
-  protected sendAnalyticsEvent(customEvent: BaseAnalyticsEvent): number {
+  protected sendAnalyticsEvent(customEvent: BaseAnalyticsEvent): void {
     const { eventName, eventParams } = customEvent
 
     const gtagEvent = ['event', eventName, eventParams]
@@ -66,16 +59,13 @@ export class Ga extends Analytics<BaseAnalyticsEvent> {
     if (window.gtag) {
       try {
         window.gtag(...gtagEvent)
-        return 0
       }
       catch (error) {
         console.error('[GA] sendEvent', error)
-        return -1
       }
     }
     else {
       console.error('[GA] gtag is not defined')
-      return -1
     }
   }
 }

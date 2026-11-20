@@ -45,31 +45,10 @@ describe('TikTok Analytics', () => {
       expect(script?.textContent).toContain(measurementId)
       expect(script?.textContent).toContain('analytics.tiktok.com')
     })
-
-    it('should be ready as soon as the snippet is injected, without a load event', () => {
-      // Act: Create instance. Inline scripts never fire `load`, so nothing triggers it here.
-      const tiktok = TikTok.getInstance(config)
-
-      // Assert: the snippet's ttq queues calls until events.js loads, so TikTok is ready at once
-      expect(tiktok.isReady).toBe(true)
-    })
-
-    it('should set isReady to true if script already exists in DOM', () => {
-      // Arrange: Pre-inject the script
-      const existingScript = document.createElement('script')
-      existingScript.setAttribute('data-id', `tiktok-pixel-${measurementId}`)
-      document.head.appendChild(existingScript)
-
-      // Act: Create TikTok instance
-      const tiktok = TikTok.getInstance(config)
-
-      // Assert: Should recognize existing script and be ready
-      expect(tiktok.isReady).toBe(true)
-    })
   })
 
-  describe('test_processAnalyticsEvent_validEvent_sendsEventWhenReady', () => {
-    it('should queue and send event when ttq is available and ready', () => {
+  describe('test_processAnalyticsEvent_validEvent_sendsEvent', () => {
+    it('should send event when ttq is available and ready', () => {
       // Arrange: Setup TikTok instance and mock ttq
       const tiktok = TikTok.getInstance(config)
       const mockTtq = {
@@ -79,7 +58,6 @@ describe('TikTok Analytics', () => {
         load: vi.fn(),
       }
       window.ttq = mockTtq
-      tiktok['setIsReady'](true)
 
       const event: BaseAnalyticsEvent = {
         eventName: 'CompletePayment',
@@ -88,7 +66,6 @@ describe('TikTok Analytics', () => {
 
       // Act: Process the event
       tiktok.processAnalyticsEvent(event)
-      vi.advanceTimersByTime(1500)
 
       // Assert: ttq.track should be called with correct parameters
       expect(mockTtq.track).toHaveBeenCalledWith('CompletePayment', {
@@ -97,41 +74,12 @@ describe('TikTok Analytics', () => {
       })
       expect(mockTtq.track).toHaveBeenCalledTimes(1)
     })
-
-    it('should queue event and retry sending when not initially ready', () => {
-      // Arrange: Setup TikTok instance without being ready
-      const tiktok = TikTok.getInstance(config)
-      tiktok['setIsReady'](false)
-      const mockTtq = {
-        track: vi.fn(),
-        push: vi.fn(),
-        page: vi.fn(),
-        load: vi.fn(),
-      }
-      window.ttq = mockTtq
-
-      const event: BaseAnalyticsEvent = {
-        eventName: 'ViewContent',
-        eventParams: { content_id: '12345' },
-      }
-
-      // Act: Process event before ready, then set ready and advance timers
-      tiktok.processAnalyticsEvent(event)
-      tiktok['setIsReady'](true)
-      vi.advanceTimersByTime(1500)
-
-      // Assert: Event should be sent after retry
-      expect(mockTtq.track).toHaveBeenCalledWith('ViewContent', {
-        content_id: '12345',
-      })
-    })
   })
 
-  describe('test_processAnalyticsEvent_multipleEvents_processesAllInQueue', () => {
-    it('should process multiple queued events when platform becomes ready', () => {
+  describe('test_processAnalyticsEvent_multipleEvents_sendsAllInOrder', () => {
+    it('should send multiple events in order', () => {
       // Arrange: Setup TikTok instance and multiple events
       const tiktok = TikTok.getInstance(config)
-      tiktok['setIsReady'](false)
       const mockTtq = {
         track: vi.fn(),
         push: vi.fn(),
@@ -159,8 +107,6 @@ describe('TikTok Analytics', () => {
       tiktok.processAnalyticsEvent(event3)
 
       // Set ready and advance time
-      tiktok['setIsReady'](true)
-      vi.advanceTimersByTime(1500)
 
       // Assert: All events should be sent
       expect(mockTtq.track).toHaveBeenCalledTimes(3)
@@ -175,7 +121,6 @@ describe('TikTok Analytics', () => {
       // Arrange: Setup TikTok instance without ttq
       const tiktok = TikTok.getInstance(config)
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-      tiktok['setIsReady'](true)
 
       const event: BaseAnalyticsEvent = {
         eventName: 'Purchase',
@@ -185,7 +130,6 @@ describe('TikTok Analytics', () => {
       // Act & Assert: Should not throw
       expect(() => {
         tiktok.processAnalyticsEvent(event)
-        vi.advanceTimersByTime(1500)
       }).not.toThrow()
 
       // Assert: Error should be logged
@@ -207,19 +151,14 @@ describe('TikTok Analytics', () => {
       }
       // @ts-expect-error: Intentionally testing incomplete ttq object
       window.ttq = mockTtq
-      tiktok['setIsReady'](true)
 
       const event: BaseAnalyticsEvent = {
         eventName: 'Purchase',
         eventParams: { value: 100 },
       }
 
-      // Act: Process event
-      tiktok.processAnalyticsEvent(event)
-      vi.advanceTimersByTime(1500)
-
-      // Assert: Should not crash, track method is optional
-      expect(tiktok.isReady).toBe(true)
+      // Act & Assert: track is optional, so a missing one must not throw
+      expect(() => tiktok.processAnalyticsEvent(event)).not.toThrow()
     })
   })
 
@@ -234,7 +173,6 @@ describe('TikTok Analytics', () => {
         load: vi.fn(),
       }
       window.ttq = mockTtq
-      tiktok['setIsReady'](true)
 
       const event: BaseAnalyticsEvent = {
         eventName: 'PageView',
@@ -243,7 +181,6 @@ describe('TikTok Analytics', () => {
 
       // Act: Process event with empty params
       tiktok.processAnalyticsEvent(event)
-      vi.advanceTimersByTime(1500)
 
       // Assert: Should send with empty object
       expect(mockTtq.track).toHaveBeenCalledWith('PageView', {})
@@ -261,7 +198,6 @@ describe('TikTok Analytics', () => {
         load: vi.fn(),
       }
       window.ttq = mockTtq
-      tiktok['setIsReady'](true)
 
       const event: BaseAnalyticsEvent = {
         eventName: 'Custom_Event-2024',
@@ -270,31 +206,9 @@ describe('TikTok Analytics', () => {
 
       // Act: Process event with special characters
       tiktok.processAnalyticsEvent(event)
-      vi.advanceTimersByTime(1500)
 
       // Assert: Should send event as-is
       expect(mockTtq.track).toHaveBeenCalledWith('Custom_Event-2024', { test: 'value' })
-    })
-  })
-
-  describe('test_eventQueue_getter_returnsImmutableCopy', () => {
-    it('should return a copy of event queue without exposing internal state', () => {
-      // Arrange: Setup TikTok instance and add event
-      const tiktok = TikTok.getInstance(config)
-      const event: BaseAnalyticsEvent = {
-        eventName: 'Test',
-        eventParams: {},
-      }
-
-      // Act: Get event queue before and after adding event
-      const queueBefore = tiktok.eventQueue
-      tiktok['addToEventQueue'](event)
-      const queueAfter = tiktok.eventQueue
-
-      // Assert: Queue should be a copy (different reference)
-      expect(queueBefore).not.toBe(queueAfter)
-      expect(queueBefore.length).toBe(0)
-      expect(queueAfter.length).toBe(1)
     })
   })
 

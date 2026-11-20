@@ -26,7 +26,7 @@
 
 Modern front-ends often require multiple analytics platforms. Analytics offers:
 - A **single API** that works across GA4, Meta Pixel, and TikTok Pixel.
-- Loads each platform's script **once**, and **queues events** until the platform can take them.
+- Loads each platform's script **once**; events sent before it finishes loading wait in the platform's own queue.
 - Built with **TypeScript**, offering type definitions out of the box.
 - **Framework-agnostic**: plain functions you can call from React or any other code.
 - Built with **Vite** for optimal bundle size and performance.
@@ -125,9 +125,7 @@ tiktok?.processAnalyticsEvent({
 ### Understanding Event Processing
 
 The `processAnalyticsEvent` method:
-- **Queues events** if the analytics script isn't loaded yet
-- **Automatically sends queued events** once the platform is ready
-- Can be called right after initialization, before the platform's script has finished loading
+- Hands the event to the platform straight away. Until the platform's script loads, its own stub (`gtag`, `fbq`, `ttq`) holds the event, so you can call it right after initialization.
 - Sends Meta's [standard events](https://developers.facebook.com/docs/meta-pixel/reference#standard-events) with `fbq('track')` and any other name with `fbq('trackCustom')`
 - Passes `eventId`, if you set one, to Meta (`eventID`) and TikTok (`event_id`) so they can deduplicate it against server-side events
 

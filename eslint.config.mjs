@@ -1,4 +1,3 @@
-import stylexPlugin from '@stylexjs/eslint-plugin'
 import stylistic from '@stylistic/eslint-plugin'
 import pluginTypeScript from '@typescript-eslint/eslint-plugin'
 import parserTypeScript from '@typescript-eslint/parser'
@@ -30,7 +29,6 @@ export default defineConfig([
       'jsx-a11y': jsxA11y,
       'react': pluginReact,
       'react-hooks': pluginReactHooks,
-      '@stylexjs': stylexPlugin,
     },
     languageOptions: {
       parser: parserTypeScript,
@@ -107,7 +105,6 @@ export default defineConfig([
           },
         },
       ],
-      '@stylexjs/valid-styles': 'error',
       'react/prop-types': 'off',
       'eqeqeq': ['error', 'smart'],
     },

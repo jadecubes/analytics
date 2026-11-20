@@ -10,7 +10,6 @@ const STANDARD_EVENTS = new Set([
 
 export interface MetaPixelConfig {
   measurementId: string
-  userId?: string | null
 }
 
 export class Meta extends Analytics<BaseAnalyticsEvent> {
@@ -37,7 +36,6 @@ export class Meta extends Analytics<BaseAnalyticsEvent> {
   }
 
   protected initialize(): void {
-    this.setIsReady(false)
     const head = document.querySelector('head')
     const existingScript = document.querySelector('script[src*="connect.facebook.net/en_US/fbevents.js"]')
     // https://www.facebook.com/help/1604282442927573
@@ -55,13 +53,11 @@ export class Meta extends Analytics<BaseAnalyticsEvent> {
       fbq('init', '${this.measurementId}');
       fbq('track', 'PageView');
       `
-      // Inline scripts run on append and never fire `load`; the snippet defines a queuing fbq
       head?.appendChild(script)
     }
-    this.setIsReady(true)
   }
 
-  protected sendAnalyticsEvent(customEvent: BaseAnalyticsEvent): number {
+  protected sendAnalyticsEvent(customEvent: BaseAnalyticsEvent): void {
     const { eventName, eventParams, eventId } = customEvent
     const command = STANDARD_EVENTS.has(eventName) ? 'track' : 'trackCustom'
     const fbqEvent = eventId
@@ -70,16 +66,13 @@ export class Meta extends Analytics<BaseAnalyticsEvent> {
     if (window.fbq) {
       try {
         window.fbq(...fbqEvent)
-        return 0
       }
       catch (error) {
         console.error('[META] sendEvent', error)
-        return -1
       }
     }
     else {
       console.error('[META] fbq is not defined')
-      return -1
     }
   }
 }
