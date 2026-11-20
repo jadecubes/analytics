@@ -39,8 +39,5 @@
   "bugs": {
     "url": "https://github.com/jadecubes/Analytics/issues"
   },
-  "homepage": "https://github.com/jadecubes/Analytics#readme",
-  "peerDependencies": {
-    "react": "^18.0.0"
-  }
+  "homepage": "https://github.com/jadecubes/Analytics#readme"
 }

@@ -18,6 +18,9 @@ export class Ga extends Analytics<BaseAnalyticsEvent> {
     if (!Ga.instance) {
       Ga.instance = new Ga(config)
     }
+    else if (config.measurementId !== Ga.instance.measurementId) {
+      console.warn(`[GA] already initialized with ${Ga.instance.measurementId}; ignoring ${config.measurementId}`)
+    }
     return Ga.instance
   }
 

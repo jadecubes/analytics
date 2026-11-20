@@ -46,15 +46,11 @@ describe('TikTok Analytics', () => {
       expect(script?.textContent).toContain('analytics.tiktok.com')
     })
 
-    it('should set isReady to true when script loads successfully', () => {
-      // Arrange: Create instance
+    it('should be ready as soon as the snippet is injected, without a load event', () => {
+      // Act: Create instance. Inline scripts never fire `load`, so nothing triggers it here.
       const tiktok = TikTok.getInstance(config)
 
-      // Act: Simulate script load event
-      const script = document.querySelector(`script[data-id="tiktok-pixel-${measurementId}"]`)
-      script?.dispatchEvent(new Event('load'))
-
-      // Assert: TikTok should be ready
+      // Assert: the snippet's ttq queues calls until events.js loads, so TikTok is ready at once
       expect(tiktok.isReady).toBe(true)
     })
 
@@ -105,6 +101,7 @@ describe('TikTok Analytics', () => {
     it('should queue event and retry sending when not initially ready', () => {
       // Arrange: Setup TikTok instance without being ready
       const tiktok = TikTok.getInstance(config)
+      tiktok['setIsReady'](false)
       const mockTtq = {
         track: vi.fn(),
         push: vi.fn(),
@@ -134,6 +131,7 @@ describe('TikTok Analytics', () => {
     it('should process multiple queued events when platform becomes ready', () => {
       // Arrange: Setup TikTok instance and multiple events
       const tiktok = TikTok.getInstance(config)
+      tiktok['setIsReady'](false)
       const mockTtq = {
         track: vi.fn(),
         push: vi.fn(),
@@ -316,6 +314,18 @@ describe('TikTok Analytics', () => {
       const script = document.querySelector(`script[data-id="tiktok-pixel-${customId}"]`)
       expect(script).not.toBeNull()
       expect(script?.textContent).toContain(customId)
+    })
+  })
+
+  describe('test_processAnalyticsEvent_eventId_passedAsEventIdOption', () => {
+    it('should pass eventId to TikTok as event_id for deduplication', () => {
+      const tiktok = TikTok.getInstance(config)
+      const mockTtq = { track: vi.fn(), push: vi.fn(), page: vi.fn(), load: vi.fn() }
+      window.ttq = mockTtq
+
+      tiktok.processAnalyticsEvent({ eventName: 'CompletePayment', eventParams: { value: 10 }, eventId: 'order-1' })
+
+      expect(mockTtq.track).toHaveBeenCalledWith('CompletePayment', { value: 10 }, { event_id: 'order-1' })
     })
   })
 })

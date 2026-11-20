@@ -1,7 +1,7 @@
-import { AnalyticsPlatforms } from '../core/Analytics'
-import { Ga, GA4Config } from '../core/Ga'
-import { Meta, MetaPixelConfig } from '../core/Meta'
-import { TikTokPixelConfig, TikTok } from '../core/Tiktok'
+import { AnalyticsPlatforms } from './core/Analytics'
+import { Ga, GA4Config } from './core/Ga'
+import { Meta, MetaPixelConfig } from './core/Meta'
+import { TikTokPixelConfig, TikTok } from './core/Tiktok'
 
 export type AnalyticsConfig = Partial<{
   [AnalyticsPlatforms.GA]: GA4Config

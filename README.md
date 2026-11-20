@@ -9,7 +9,6 @@
 [![Build Status](https://img.shields.io/github/actions/workflow/status/jadecubes/Analytics/ci.yml?branch=main)](https://github.com/jadecubes/Analytics/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-18.3-blue)](https://reactjs.org/)
 
 </p>
 
@@ -18,7 +17,7 @@
 </p>
 
 <p align="center">
-  Built for React applications and beyond
+  Works in React apps or any other front-end
 </p>
 
 ---
@@ -27,16 +26,16 @@
 
 Modern front-ends often require multiple analytics platforms. Analytics offers:
 - A **single API** that works across GA4, Meta Pixel, and TikTok Pixel.
-- **Lazy loading** of tracking scripts and automatic queueing of events.
+- Loads each platform's script **once**, and **queues events** until the platform can take them.
 - Built with **TypeScript**, offering type definitions out of the box.
-- Designed for **React** (hooks + context) but easy to adapt.
+- **Framework-agnostic**: plain functions you can call from React or any other code.
 - Built with **Vite** for optimal bundle size and performance.
 
 ---
 
 ## 🧑‍💻 Who Should Use It?
 
-- Front-end engineers using React who want to track events across multiple analytics platforms.
+- Front-end engineers who want to track events across multiple analytics platforms.
 - Teams looking for a shared analytics library with a consistent API.
 - Developers who want a lightweight, configurable alternative to multiple SDKs.
 
@@ -128,9 +127,11 @@ tiktok?.processAnalyticsEvent({
 The `processAnalyticsEvent` method:
 - **Queues events** if the analytics script isn't loaded yet
 - **Automatically sends queued events** once the platform is ready
-- **Handles lazy loading** - you can call it immediately after initialization without worrying about script load timing
+- Can be called right after initialization, before the platform's script has finished loading
+- Sends Meta's [standard events](https://developers.facebook.com/docs/meta-pixel/reference#standard-events) with `fbq('track')` and any other name with `fbq('trackCustom')`
+- Passes `eventId`, if you set one, to Meta (`eventID`) and TikTok (`event_id`) so they can deduplicate it against server-side events
 
-### React Integration
+### Using It in React
 
 ```typescript
 import { useEffect } from 'react'
@@ -228,7 +229,7 @@ This library is published as `@jadecubes/analytics` on npm. If you're a maintain
 
 ### Automated Publishing (Recommended)
 
-You can add a publish script to your root `package.json`:
+The root `package.json` already has a publish script:
 
 ```json
 {
@@ -265,7 +266,7 @@ Analytics/
 │   └── analytics/          # Main analytics library
 │       ├── src/
 │       │   ├── core/       # Core analytics implementations
-│       │   ├── react/      # React-specific providers
+│       │   ├── createAnalyticsProviders.ts  # Set up platforms, get instances
 │       │   └── types/      # TypeScript types
 │       └── vite.config.ts  # Vite build configuration
 └── tools/                  # Build and development tools

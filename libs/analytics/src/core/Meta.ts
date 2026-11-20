@@ -1,6 +1,13 @@
 import { type BaseAnalyticsEvent } from '../types/events.ts'
 import { Analytics } from './Analytics.ts'
 
+// https://developers.facebook.com/docs/meta-pixel/reference#standard-events
+const STANDARD_EVENTS = new Set([
+  'AddPaymentInfo', 'AddToCart', 'AddToWishlist', 'CompleteRegistration', 'Contact',
+  'CustomizeProduct', 'Donate', 'FindLocation', 'InitiateCheckout', 'Lead', 'PageView',
+  'Purchase', 'Schedule', 'Search', 'StartTrial', 'SubmitApplication', 'Subscribe', 'ViewContent',
+])
+
 export interface MetaPixelConfig {
   measurementId: string
   userId?: string | null
@@ -20,6 +27,9 @@ export class Meta extends Analytics<BaseAnalyticsEvent> {
   public static getInstance(config: MetaPixelConfig): Meta {
     if (!Meta.instance) {
       Meta.instance = new Meta(config)
+    }
+    else if (config.measurementId !== Meta.instance.measurementId) {
+      console.warn(`[META] already initialized with ${Meta.instance.measurementId}; ignoring ${config.measurementId}`)
     }
     return Meta.instance
   }
@@ -43,17 +53,18 @@ export class Meta extends Analytics<BaseAnalyticsEvent> {
       fbq('init', '${this.measurementId}');
       fbq('track', 'PageView');
       `
-      script.onload = () => {
-        this.setIsReady(true)
-      }
+      // Inline scripts run on append and never fire `load`; the snippet defines a queuing fbq
       head?.appendChild(script)
     }
-    else { this.setIsReady(true) }
+    this.setIsReady(true)
   }
 
   protected sendAnalyticsEvent(customEvent: BaseAnalyticsEvent): number {
-    const { eventName, eventParams } = customEvent
-    const fbqEvent = ['event', eventName, eventParams]
+    const { eventName, eventParams, eventId } = customEvent
+    const command = STANDARD_EVENTS.has(eventName) ? 'track' : 'trackCustom'
+    const fbqEvent = eventId
+      ? [command, eventName, eventParams, { eventID: eventId }]
+      : [command, eventName, eventParams]
     if (window.fbq) {
       try {
         window.fbq(...fbqEvent)

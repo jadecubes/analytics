@@ -48,18 +48,11 @@ describe('Meta Analytics', () => {
       expect(fbqScript?.textContent).toContain(measurementId)
     })
 
-    it('should set isReady to true when script loads successfully', () => {
-      // Arrange: Create instance
+    it('should be ready as soon as the snippet is injected, without a load event', () => {
+      // Act: Create instance. Inline scripts never fire `load`, so nothing triggers it here.
       const meta = Meta.getInstance(config)
 
-      // Act: Find and trigger script onload
-      const scripts = document.querySelectorAll('script')
-      const fbqScript = Array.from(scripts).find(s =>
-        s.textContent?.includes('connect.facebook.net/en_US/fbevents.js'),
-      )
-      fbqScript?.onload?.(new Event('load'))
-
-      // Assert: Meta should be ready
+      // Assert: the snippet's fbq queues calls until fbevents.js loads, so Meta is ready at once
       expect(meta.isReady).toBe(true)
     })
 
@@ -95,7 +88,7 @@ describe('Meta Analytics', () => {
       vi.advanceTimersByTime(1500)
 
       // Assert: fbq should be called with correct parameters
-      expect(mockFbq).toHaveBeenCalledWith('event', 'Purchase', {
+      expect(mockFbq).toHaveBeenCalledWith('track', 'Purchase', {
         currency: 'USD',
         value: 100,
       })
@@ -105,6 +98,7 @@ describe('Meta Analytics', () => {
     it('should queue event and retry sending when not initially ready', () => {
       // Arrange: Setup Meta instance without being ready
       const meta = Meta.getInstance(config)
+      meta['setIsReady'](false)
       const mockFbq = vi.fn()
       window.fbq = mockFbq
 
@@ -119,7 +113,7 @@ describe('Meta Analytics', () => {
       vi.advanceTimersByTime(1500)
 
       // Assert: Event should be sent after retry
-      expect(mockFbq).toHaveBeenCalledWith('event', 'AddToCart', {
+      expect(mockFbq).toHaveBeenCalledWith('track', 'AddToCart', {
         content_name: 'Product A',
       })
     })
@@ -129,6 +123,7 @@ describe('Meta Analytics', () => {
     it('should process multiple queued events when platform becomes ready', () => {
       // Arrange: Setup Meta instance and multiple events
       const meta = Meta.getInstance(config)
+      meta['setIsReady'](false)
       const mockFbq = vi.fn()
       window.fbq = mockFbq
 
@@ -156,9 +151,9 @@ describe('Meta Analytics', () => {
 
       // Assert: All events should be sent
       expect(mockFbq).toHaveBeenCalledTimes(3)
-      expect(mockFbq).toHaveBeenNthCalledWith(1, 'event', 'ViewContent', { content_type: 'product' })
-      expect(mockFbq).toHaveBeenNthCalledWith(2, 'event', 'AddToCart', { content_name: 'Item' })
-      expect(mockFbq).toHaveBeenNthCalledWith(3, 'event', 'Purchase', { value: 50 })
+      expect(mockFbq).toHaveBeenNthCalledWith(1, 'track', 'ViewContent', { content_type: 'product' })
+      expect(mockFbq).toHaveBeenNthCalledWith(2, 'track', 'AddToCart', { content_name: 'Item' })
+      expect(mockFbq).toHaveBeenNthCalledWith(3, 'track', 'Purchase', { value: 50 })
     })
   })
 
@@ -203,7 +198,7 @@ describe('Meta Analytics', () => {
       vi.advanceTimersByTime(1500)
 
       // Assert: Should send with empty object
-      expect(mockFbq).toHaveBeenCalledWith('event', 'PageView', {})
+      expect(mockFbq).toHaveBeenCalledWith('track', 'PageView', {})
     })
   })
 
@@ -238,6 +233,54 @@ describe('Meta Analytics', () => {
       expect(queueBefore).not.toBe(queueAfter)
       expect(queueBefore.length).toBe(0)
       expect(queueAfter.length).toBe(1)
+    })
+  })
+
+  describe('test_processAnalyticsEvent_customEventAndEventId', () => {
+    it('should send a non-standard event name with trackCustom', () => {
+      const meta = Meta.getInstance(config)
+      const mockFbq = vi.fn()
+      window.fbq = mockFbq
+
+      meta.processAnalyticsEvent({ eventName: 'ShareCampaign', eventParams: { method: 'line' } })
+
+      expect(mockFbq).toHaveBeenCalledWith('trackCustom', 'ShareCampaign', { method: 'line' })
+    })
+
+    it('should pass eventId to Meta as eventID for deduplication', () => {
+      const meta = Meta.getInstance(config)
+      const mockFbq = vi.fn()
+      window.fbq = mockFbq
+
+      meta.processAnalyticsEvent({ eventName: 'Purchase', eventParams: { value: 10 }, eventId: 'order-1' })
+
+      expect(mockFbq).toHaveBeenCalledWith('track', 'Purchase', { value: 10 }, { eventID: 'order-1' })
+    })
+  })
+
+  describe('test_processAnalyticsEvent_notReady_schedulesOneRetry', () => {
+    it('should keep a single retry timer however many events are queued', () => {
+      const meta = Meta.getInstance(config)
+      meta['setIsReady'](false)
+
+      meta.processAnalyticsEvent({ eventName: 'ViewContent', eventParams: {} })
+      meta.processAnalyticsEvent({ eventName: 'AddToCart', eventParams: {} })
+      meta.processAnalyticsEvent({ eventName: 'Purchase', eventParams: {} })
+
+      expect(vi.getTimerCount()).toBe(1)
+    })
+  })
+
+  describe('test_getInstance_differentMeasurementId_warns', () => {
+    it('should keep the first instance and warn when called with another id', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const first = Meta.getInstance(config)
+
+      const second = Meta.getInstance({ measurementId: 'OTHER-ID' })
+
+      expect(second).toBe(first)
+      expect(warnSpy).toHaveBeenCalledOnce()
+      warnSpy.mockRestore()
     })
   })
 })

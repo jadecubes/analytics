@@ -10,7 +10,8 @@ export interface BaseAnalyticsEvent {
   eventName: string
   eventParams: Gtag.EventParams | Gtag.ControlParams | Gtag.CustomParams
   /**
-   * The unique ID of the event. This is used to deduplicate events in the event processing pipeline.
+   * Unique ID for deduplicating with server-side events. Sent to Meta as `eventID` and to
+   * TikTok as `event_id`; GA4 has no equivalent, so Ga ignores it.
    */
   eventId?: string
 }

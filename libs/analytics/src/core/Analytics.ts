@@ -9,10 +9,12 @@ export enum AnalyticsPlatforms {
 export abstract class Analytics<T extends BaseAnalyticsEvent> {
   private _isReady: boolean
   private _eventQueue: T[]
+  private _retryTimer: number | null
 
   constructor() {
     this._eventQueue = []
     this._isReady = false
+    this._retryTimer = null
   }
 
   protected abstract initialize(): void
@@ -20,7 +22,13 @@ export abstract class Analytics<T extends BaseAnalyticsEvent> {
 
   protected writeEventsToPlatform(): void {
     if (!this._isReady) {
-      window.setTimeout(() => this.writeEventsToPlatform(), TIME_WAIT_FOR_READY_PLATFORM)
+      // One pending retry at most, however many events arrive before the platform is ready
+      if (this._retryTimer === null) {
+        this._retryTimer = window.setTimeout(() => {
+          this._retryTimer = null
+          this.writeEventsToPlatform()
+        }, TIME_WAIT_FOR_READY_PLATFORM)
+      }
       return
     }
     this._eventQueue.forEach((event) => {

@@ -18,6 +18,9 @@ export class TikTok extends Analytics<BaseAnalyticsEvent> {
     if (!TikTok.instance) {
       TikTok.instance = new TikTok(config)
     }
+    else if (config.measurementId !== TikTok.instance.measurementId) {
+      console.warn(`[TT] already initialized with ${TikTok.instance.measurementId}; ignoring ${config.measurementId}`)
+    }
     return TikTok.instance
   }
 
@@ -58,19 +61,22 @@ export class TikTok extends Analytics<BaseAnalyticsEvent> {
         ttq.page();
       }(window, document, 'ttq');
       `
-      script.onload = () => {
-        this.setIsReady(true)
-      }
+      // Inline scripts run on append and never fire `load`; the snippet defines a queuing ttq
       head?.appendChild(script)
     }
-    else { this.setIsReady(true) }
+    this.setIsReady(true)
   }
 
   protected sendAnalyticsEvent(customEvent: BaseAnalyticsEvent): number {
-    const { eventName, eventParams } = customEvent
+    const { eventName, eventParams, eventId } = customEvent
     if (window.ttq) {
       try {
-        window.ttq.track?.(eventName, eventParams)
+        if (eventId) {
+          window.ttq.track?.(eventName, eventParams, { event_id: eventId })
+        }
+        else {
+          window.ttq.track?.(eventName, eventParams)
+        }
         return 0
       }
       catch (error) {
