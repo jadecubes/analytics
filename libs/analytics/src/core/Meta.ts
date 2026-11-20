@@ -1,7 +1,6 @@
 import { type BaseAnalyticsEvent } from '../types/events'
 import { Analytics, AnalyticsPlatforms } from './Analytics'
 
-// https://developers.facebook.com/docs/meta-pixel/reference#standard-events
 const STANDARD_EVENTS = new Set([
   'AddPaymentInfo', 'AddToCart', 'AddToWishlist', 'CompleteRegistration', 'Contact',
   'CustomizeProduct', 'Donate', 'FindLocation', 'InitiateCheckout', 'Lead', 'PageView',
@@ -42,7 +41,6 @@ export class Meta extends Analytics {
       console.error(`[${this.platform}] fbq is not defined`)
       return
     }
-    // The Single commands reach only our pixel, not other pixels on the page
     const command = STANDARD_EVENTS.has(eventName) ? 'trackSingle' : 'trackSingleCustom'
     if (eventId) {
       window.fbq(command, this.measurementId, eventName, eventParams, { eventID: eventId })

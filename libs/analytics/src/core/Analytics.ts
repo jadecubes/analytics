@@ -12,7 +12,6 @@ const isStoredEvent = (item: unknown): item is BaseAnalyticsEvent =>
   typeof item === 'object' && item !== null && typeof (item as { eventName?: unknown }).eventName === 'string'
 
 export abstract class Analytics {
-  // Subclass fields are assigned only after this constructor returns, so the platform comes in here
   constructor(
     protected readonly platform: AnalyticsPlatforms,
     public readonly measurementId: string,
@@ -47,7 +46,6 @@ export abstract class Analytics {
     let pendingEvents: BaseAnalyticsEvent[]
     try {
       pendingEvents = this.readPendingEvents()
-      // Cleared before sending, so an interrupted replay can't send an event twice
       window.sessionStorage.removeItem(this.pendingStorageKey)
     }
     catch {

@@ -20,7 +20,6 @@ export class Ga extends Analytics {
       }
       window.gtag('js', new Date())
     }
-    // The page may already run gtag for another property; set ours up unless its script is there
     if (!document.querySelector(`script[src="${scriptSrc}"]`)) {
       window.gtag('config', this.measurementId)
       const script = document.createElement('script')

@@ -25,7 +25,7 @@
 ## 🎯 Why Analytics?
 
 Modern front-ends often require multiple analytics platforms. Analytics offers:
-- A **single API** that works across GA4, Meta Pixel, and TikTok Pixel.
+- The **same API** for GA4, Meta Pixel, and TikTok Pixel.
 - Loads each platform's script **once**; events sent before it finishes loading wait in the platform's own queue.
 - Built with **TypeScript**: exports `BaseAnalyticsEvent` and each platform's config type.
 - **Framework-agnostic**: plain functions you can call from React or any other code.

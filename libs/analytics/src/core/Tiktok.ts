@@ -50,7 +50,6 @@ export class TikTok extends Analytics {
       console.error(`[${this.platform}] ttq is not defined`)
       return
     }
-    // instance(id) reaches only our pixel, not other pixels on the page
     const pixel = window.ttq.instance(this.measurementId)
     if (eventId) {
       pixel.track(eventName, eventParams, { event_id: eventId })

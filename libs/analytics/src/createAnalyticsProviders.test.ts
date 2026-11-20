@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AnalyticsPlatforms } from './core/Analytics'
 
-// Each test gets a fresh module, so instances from one test don't leak into the next
 const loadModule = () => import('./createAnalyticsProviders')
 
 describe('createAnalyticsProviders', () => {
