@@ -1,16 +1,18 @@
 import { type BaseAnalyticsEvent } from '../types/events.ts'
-import { Analytics } from './Analytics.ts'
+import { Analytics, AnalyticsPlatforms } from './Analytics.ts'
 export interface GA4Config {
   measurementId: string
 }
 export class Ga extends Analytics<BaseAnalyticsEvent> {
   protected measurementId: string
   private static instance: Ga | null = null
+  protected readonly platform = AnalyticsPlatforms.GA
 
   constructor(config: GA4Config) {
     super()
     this.measurementId = config.measurementId
     this.initialize()
+    this.replayPendingEvents()
   }
 
   // Static getInstance method for singleton pattern

@@ -1,5 +1,5 @@
 import { type BaseAnalyticsEvent } from '../types/events.ts'
-import { Analytics } from './Analytics.ts'
+import { Analytics, AnalyticsPlatforms } from './Analytics.ts'
 
 export interface TikTokPixelConfig {
   measurementId: string
@@ -7,10 +7,12 @@ export interface TikTokPixelConfig {
 export class TikTok extends Analytics<BaseAnalyticsEvent> {
   protected measurementId: string
   private static instance: TikTok | null = null
+  protected readonly platform = AnalyticsPlatforms.TIKTOK
   constructor(config: TikTokPixelConfig) {
     super()
     this.measurementId = config.measurementId
     this.initialize()
+    this.replayPendingEvents()
   }
 
   // Static getInstance method for singleton pattern

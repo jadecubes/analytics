@@ -1,5 +1,6 @@
 import { type BaseAnalyticsEvent } from '../types/events'
 export const TIME_WAIT_FOR_READY_PLATFORM = 500
+export const PENDING_EVENTS_KEY_PREFIX = '@jadecubes/analytics:pending:'
 export enum AnalyticsPlatforms {
   GA = 'GA',
   META = 'META',
@@ -17,6 +18,7 @@ export abstract class Analytics<T extends BaseAnalyticsEvent> {
     this._retryTimer = null
   }
 
+  protected abstract readonly platform: AnalyticsPlatforms
   protected abstract initialize(): void
   protected abstract sendAnalyticsEvent(customEvent: T): void
 
@@ -56,5 +58,48 @@ export abstract class Analytics<T extends BaseAnalyticsEvent> {
 
   protected addToEventQueue(customEvent: T): void {
     this._eventQueue.push(customEvent)
+  }
+
+  /**
+   * Saves the event and sends it on the next page load instead of now. Use it for events
+   * fired right before a full-page navigation, which the unload would otherwise lose.
+   * Falls back to sending now when sessionStorage is unavailable.
+   */
+  public sendAnalyticsPendingEvent(customEvent: T): void {
+    try {
+      const pendingEvents = this.readPendingEvents()
+      window.sessionStorage.setItem(this.pendingStorageKey, JSON.stringify([...pendingEvents, customEvent]))
+    }
+    catch {
+      this.processAnalyticsEvent(customEvent)
+    }
+  }
+
+  protected replayPendingEvents(): void {
+    let pendingEvents: T[]
+    try {
+      pendingEvents = this.readPendingEvents()
+      // Cleared before sending, so an interrupted replay can't send an event twice
+      window.sessionStorage.removeItem(this.pendingStorageKey)
+    }
+    catch {
+      return
+    }
+    pendingEvents.forEach(event => this.processAnalyticsEvent(event))
+  }
+
+  private get pendingStorageKey(): string {
+    return `${PENDING_EVENTS_KEY_PREFIX}${this.platform}`
+  }
+
+  private readPendingEvents(): T[] {
+    const saved = window.sessionStorage.getItem(this.pendingStorageKey)
+    try {
+      const parsed: unknown = JSON.parse(saved ?? '[]')
+      return Array.isArray(parsed) ? (parsed as T[]) : []
+    }
+    catch {
+      return []
+    }
   }
 }

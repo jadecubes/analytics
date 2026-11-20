@@ -1,5 +1,5 @@
 import { type BaseAnalyticsEvent } from '../types/events.ts'
-import { Analytics } from './Analytics.ts'
+import { Analytics, AnalyticsPlatforms } from './Analytics.ts'
 
 // https://developers.facebook.com/docs/meta-pixel/reference#standard-events
 const STANDARD_EVENTS = new Set([
@@ -16,11 +16,13 @@ export interface MetaPixelConfig {
 export class Meta extends Analytics<BaseAnalyticsEvent> {
   protected measurementId: string
   private static instance: Meta | null = null
+  protected readonly platform = AnalyticsPlatforms.META
 
   constructor(config: MetaPixelConfig) {
     super()
     this.measurementId = config.measurementId
     this.initialize()
+    this.replayPendingEvents()
   }
 
   // Static getInstance method for singleton pattern

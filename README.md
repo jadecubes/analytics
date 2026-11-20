@@ -131,6 +131,26 @@ The `processAnalyticsEvent` method:
 - Sends Meta's [standard events](https://developers.facebook.com/docs/meta-pixel/reference#standard-events) with `fbq('track')` and any other name with `fbq('trackCustom')`
 - Passes `eventId`, if you set one, to Meta (`eventID`) and TikTok (`event_id`) so they can deduplicate it against server-side events
 
+### Events Right Before a Page Navigation
+
+An event sent just before a full-page navigation (a link, a form submit, `window.location = …`) can be lost when the page unloads. `sendAnalyticsPendingEvent` saves the event in `sessionStorage` instead, and the platform sends it the next time it is initialized, on the next page:
+
+```typescript
+const meta = getAnalyticsInstance(AnalyticsPlatforms.META)
+
+meta?.sendAnalyticsPendingEvent({
+  eventName: 'InitiateCheckout',
+  eventParams: { value: 99.99, currency: 'USD' },
+  eventId: 'checkout-12345',
+})
+window.location.href = '/checkout'
+```
+
+- Each platform keeps its own pending events, so call it on every platform that should receive the event.
+- The event is sent from the next page, so the platform records that page and time. Put anything you need from the current page in `eventParams`.
+- `sessionStorage` belongs to one tab and one site: closing the tab or navigating to another domain drops pending events.
+- If `sessionStorage` is unavailable, the event is sent immediately instead.
+
 ### Using It in React
 
 ```typescript
